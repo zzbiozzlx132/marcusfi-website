@@ -1,11 +1,11 @@
-// Header.tsx
+// src/components/Header.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, BarChart3, UserCircle } from 'lucide-react'; // Bỏ Globe2 nếu không dùng ở đâu khác
+import { Menu, X, BarChart3, UserCircle } from 'lucide-react'; // Bỏ Globe2 nếu LanguageSwitch đã thay thế hoàn toàn
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import LanguageSwitch from './LanguageSwitch'; // Import component mới
+import LanguageSwitch from './LanguageSwitch'; // Import component LanguageSwitch
 
-// Định nghĩa kiểu cho nội dung header (giữ nguyên từ lần trước)
+// Định nghĩa kiểu cho nội dung header
 interface HeaderContentType {
   home: string;
   process: string;
@@ -26,7 +26,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-  const { language } = useLanguage(); // Chỉ cần language, setLanguage đã được dùng trong LanguageSwitch
+  const { language } = useLanguage(); // setLanguage được dùng trong LanguageSwitch
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -60,12 +60,6 @@ const Header: React.FC = () => {
     };
   }, [isAccountDropdownOpen, isMenuOpen]);
 
-  // Bỏ hàm toggleLanguage ở đây vì LanguageSwitch tự xử lý
-  // const toggleLanguage = () => {
-  //   setLanguage(language === 'en' ? 'vi' : 'en');
-  //   setIsAccountDropdownOpen(false);
-  // };
-
   const toggleAccountDropdown = () => {
     setIsAccountDropdownOpen(!isAccountDropdownOpen);
     setIsMenuOpen(false);
@@ -87,7 +81,7 @@ const Header: React.FC = () => {
     en: {
       home: 'Home',
       process: 'Process',
-      blog: 'Blog',
+      blog: 'Blog', // Thêm key cho Blog
       resources: 'Resources',
       signIn: 'Sign In',
       signUp: 'Sign Up',
@@ -97,7 +91,7 @@ const Header: React.FC = () => {
     vi: {
       home: 'Trang chủ',
       process: 'Quy trình',
-      blog: 'Blog',
+      blog: 'Bài viết', // Thêm key cho Blog
       resources: 'Tài nguyên',
       signIn: 'Đăng nhập',
       signUp: 'Đăng ký',
@@ -123,14 +117,13 @@ const Header: React.FC = () => {
           <div className="hidden md:flex items-center space-x-5 lg:space-x-6">
             <Link to="/" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.home}</Link>
             <Link to="/process" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.process}</Link>
+            {/* THÊM LINK BLOG Ở ĐÂY */}
             <Link to="/blog" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.blog}</Link>
             <Link to="/resources" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.resources}</Link>
           </div>
 
-          <div className="hidden md:flex items-center space-x-3 lg:space-x-4"> {/* Tăng space-x nếu cần */}
-            {/* Thay thế nút cũ bằng LanguageSwitch */}
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
             <LanguageSwitch />
-
             <div className="relative" ref={accountDropdownRef}>
               <button
                 onClick={toggleAccountDropdown}
@@ -179,6 +172,7 @@ const Header: React.FC = () => {
             <div className="flex flex-col space-y-2">
               <Link to="/" onClick={closeMobileMenu} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.home}</Link>
               <Link to="/process" onClick={closeMobileMenu} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.process}</Link>
+              {/* THÊM LINK BLOG Ở ĐÂY CHO MOBILE */}
               <Link to="/blog" onClick={closeMobileMenu} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.blog}</Link>
               <Link to="/resources" onClick={closeMobileMenu} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.resources}</Link>
 
@@ -186,8 +180,7 @@ const Header: React.FC = () => {
                 <Link to="/signin" onClick={closeMobileMenu} className="block w-full text-center px-3 py-2.5 text-sm font-semibold text-[#6e00ff] rounded-lg border-2 border-[#6e00ff] hover:bg-[#6e00ff]/10 transition-colors">{t.signIn}</Link>
                 <Link to="/signup" onClick={closeMobileMenu} className="block w-full text-center px-3 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#8f00ff] to-[#e100ff] hover:from-[#9e00ff] hover:to-[#ff00e0] rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">{t.signUp}</Link>
               </div>
-              
-              {/* Sử dụng LanguageSwitch trong menu mobile */}
+
               <div className="flex justify-center mt-3 pt-3 border-t border-gray-200/80">
                  <LanguageSwitch />
               </div>
