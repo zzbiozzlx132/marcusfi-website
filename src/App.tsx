@@ -1,60 +1,91 @@
 // src/App.tsx
-import React from 'react'; // Giữ lại import React nếu bạn dùng phiên bản React < 17 hoặc có lý do khác
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+
+// Layout Components
 import Header from './components/Header';
-import Hero from './components/Hero';
-import Problem from './components/Problem';
-import Solution from './components/Solution';
-import LeadMagnet from './components/LeadMagnet';
-import Testimonials from './components/Testimonials';
-import BlogPreview from './components/BlogPreview'; // Bạn có thể giữ lại hoặc sau này thay bằng link đến /blog
 import Footer from './components/Footer';
 
-// 1. IMPORT TRANG BLOG LIST PAGE
-import BlogListPage from './pages/BlogListPage'; // Đảm bảo đường dẫn này đúng
+// Page Components (Sử dụng lazy loading)
+const Hero = lazy(() => import('./components/Hero'));
+const Problem = lazy(() => import('./components/Problem'));
+const LeadMagnet = lazy(() => import('./components/LeadMagnet'));
+const Testimonials = lazy(() => import('./components/Testimonials'));
+const BlogPreview = lazy(() => import('./components/BlogPreview'));
+const BlogListPage = lazy(() => import('./pages/BlogListPage'));
+const SinglePostPage = lazy(() => import('./pages/SinglePostPage'));
+const ProcessPage = lazy(() => import('./pages/ProcessPage'));
+// HomePage - bạn có thể tạo file này để làm trang chủ riêng
+// const HomePage = lazy(() => import('./pages/HomePage'));
 
-// 2. IMPORT TRANG SINGLE POST PAGE
-import SinglePostPage from './pages/SinglePostPage'; // THÊM DÒNG NÀY - Đảm bảo bạn đã tạo file này
 
-// Ví dụ các component trang khác (bạn có thể sẽ tạo sau)
-// import ProcessPage from './pages/ProcessPage';
+// Component Loading Spinner
+const LoadingSpinner: React.FC = () => (
+  <div className="flex justify-center items-center h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
+    <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-purple-400"></div>
+    <p className="text-white text-lg ml-4 font-display">Đang tải MarcusFI...</p>
+  </div>
+);
 
+// Layout chính cho các trang có Header và Footer chung
+const MainLayout: React.FC = () => {
+  return (
+    <div className="font-sans flex flex-col min-h-screen bg-white dark:bg-slate-900 selection:bg-purple-500 selection:text-white">
+      <Header />
+      <main className="flex-grow pt-16 sm:pt-20 md:pt-24"> {/* Điều chỉnh padding-top cho phù hợp với chiều cao Header */}
+        <Suspense fallback={<LoadingSpinner />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <Footer />
+    </div>
+  );
+};
 
 function App() {
   return (
     <LanguageProvider>
-      <Router>
-        <div className="font-sans flex flex-col min-h-screen bg-white"> {/* Thêm bg-white nếu muốn nền mặc định */}
-          <Header />
-          {/* THÊM PADDING TOP CHO PHẦN CONTENT CHÍNH */}
-          <div className="flex-grow pt-16 sm:pt-20 md:pt-24"> {/* Điều chỉnh padding-top cho phù hợp với chiều cao Header của bạn */}
-            <Routes>
+      <BrowserRouter>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Các trang sử dụng MainLayout (có Header, Footer chung) */}
+            <Route element={<MainLayout />}>
               <Route path="/" element={
-                <main>
+                <>
                   <Hero />
                   <Problem />
-                  <Solution />
                   <LeadMagnet />
                   <Testimonials />
                   <BlogPreview />
-                </main>
+                </>
               } />
-
-              {/* ROUTE CHO BLOG LIST PAGE */}
               <Route path="/blog" element={<BlogListPage />} />
-
-              {/* 3. THÊM ROUTE CHO SINGLE POST PAGE */}
               <Route path="/blog/:slug" element={<SinglePostPage />} />
+              {/*
+                Các route LoginPage và RegisterPage đã được loại bỏ vì chưa triển khai.
+                Khi nào bạn sẵn sàng, có thể thêm lại chúng vào đây:
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+              */}
+            </Route>
 
-              {/* Các Route khác sẽ được thêm sau, ví dụ: */}
-              {/* <Route path="/process" element={<ProcessPage />} /> */}
+            {/* Trang Process sẽ có layout riêng */}
+            <Route path="/process" element={<ProcessPage />} />
 
-            </Routes>
-          </div>
-          <Footer />
-        </div>
-      </Router>
+            {/* Route cho trang không tìm thấy */}
+            <Route path="*" element={
+              <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center items-center p-4">
+                <h1 className="text-5xl sm:text-7xl font-display text-purple-500 mb-4 animate-pulse-glow">404</h1>
+                <p className="text-xl sm:text-2xl text-gray-300 mb-8 text-center">Oops! Trang bạn đang tìm kiếm dường như đã lạc vào vũ trụ MarcusFI rồi.</p>
+                <a href="/" className="inline-flex items-center group px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-white shadow-lg hover:shadow-purple-500/50">
+                  Quay Về Cổng Chính
+                </a>
+              </div>
+            } />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
     </LanguageProvider>
   );
 }
