@@ -1,0 +1,65 @@
+# .github/workflows/deploy.yml
+
+name: Deploy to GitHub Pages
+
+on:
+  # Chạy workflow này mỗi khi có push lên branch 'main'
+  push:
+    branches:
+      - main # Nếu branch chính của bạn là 'master', hãy đổi 'main' thành 'master'
+  # Cho phép chạy workflow này thủ công từ tab Actions trên GitHub
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Cần quyền này để action có thể push vào branch gh-pages
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Bạn có thể thay đổi thành phiên bản Node.js bạn đang dùng, ví dụ: '20'
+
+      - name: Install dependencies
+        # Nếu bạn dùng yarn, thay 'npm install' bằng 'yarn install --frozen-lockfile'
+        # Nếu bạn dùng pnpm, thay bằng 'pnpm install --frozen-lockfile'
+        run: npm install
+
+      - name: Build project
+        # Nếu bạn dùng yarn, thay 'npm run build' bằng 'yarn build'
+        # Nếu bạn dùng pnpm, thay bằng 'pnpm run build'
+        run: npm run build
+        env:
+          # Đặt các biến môi trường cần cho quá trình build ở đây
+          # Ví dụ: nếu API của bạn là công khai và đã được đặt trong code hoặc file .env (không chứa bí mật)
+          # thì không cần khai báo ở đây nữa.
+          # Nếu bạn muốn dùng GitHub Repository Variables/Secrets, cú pháp sẽ là:
+          # VITE_STRAPI_API_BASE_URL: ${{ vars.VITE_STRAPI_API_BASE_URL || secrets.VITE_STRAPI_API_BASE_URL }}
+          # VITE_STRAPI_BASE_URL_FILES: ${{ vars.VITE_STRAPI_BASE_URL_FILES || secrets.VITE_STRAPI_BASE_URL_FILES }}
+          # Hiện tại, chúng ta giả định các URL API đã được xử lý trong code hoặc .env của bạn
+          # và không phải là thông tin nhạy cảm cần che giấu.
+          # Nếu các URL API của bạn (cho Strapi) là khác nhau giữa dev và production,
+          # bạn cần đảm bảo quá trình build sử dụng URL production.
+          # Vite sẽ tự động sử dụng .env.production nếu có khi chạy 'npm run build'.
+          # Hoặc bạn có thể đặt chúng trực tiếp ở đây nếu chúng không phải bí mật:
+          # VITE_STRAPI_API_BASE_URL: 'https://your-production-strapi-api-url.com/api'
+          # VITE_STRAPI_BASE_URL_FILES: 'https://your-production-strapi-files-url.com'
+          # Quan trọng: Đảm bảo các biến này có tiền tố VITE_ nếu bạn dùng Vite để chúng được expose cho client.
+          # Ví dụ, URL Strapi của bạn là: https://productive-birthday-b808dc4c19.strapiapp.com
+          VITE_STRAPI_API_BASE_URL: 'https://productive-birthday-b808dc4c19.strapiapp.com/api'
+          VITE_STRAPI_BASE_URL_FILES: 'https://productive-birthday-b808dc4c19.strapiapp.com'
+
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4 # Sử dụng phiên bản mới nhất của action
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist # Thư mục chứa các file đã build (Vite mặc định là 'dist')
+          # Tùy chọn: bạn có thể thêm user_name và user_email nếu muốn commit có tên cụ thể
+          # user_name: 'github-actions[bot]'
+          # user_email: 'github-actions[bot]@users.noreply.github.com'
