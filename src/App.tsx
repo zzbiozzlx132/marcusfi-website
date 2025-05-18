@@ -1,6 +1,7 @@
 // src/App.tsx
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+// THÊM Link VÀO IMPORT NÀY
+import { BrowserRouter, Routes, Route, Outlet, Link } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 
 // Layout Components
@@ -16,8 +17,7 @@ const BlogPreview = lazy(() => import('./components/BlogPreview'));
 const BlogListPage = lazy(() => import('./pages/BlogListPage'));
 const SinglePostPage = lazy(() => import('./pages/SinglePostPage'));
 const ProcessPage = lazy(() => import('./pages/ProcessPage'));
-// HomePage - bạn có thể tạo file này để làm trang chủ riêng
-// const HomePage = lazy(() => import('./pages/HomePage'));
+const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 
 
 // Component Loading Spinner
@@ -62,12 +62,7 @@ function App() {
               } />
               <Route path="/blog" element={<BlogListPage />} />
               <Route path="/blog/:slug" element={<SinglePostPage />} />
-              {/*
-                Các route LoginPage và RegisterPage đã được loại bỏ vì chưa triển khai.
-                Khi nào bạn sẵn sàng, có thể thêm lại chúng vào đây:
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-              */}
+              <Route path="/resources" element={<ResourcesPage />} />
             </Route>
 
             {/* Trang Process sẽ có layout riêng */}
@@ -76,11 +71,18 @@ function App() {
             {/* Route cho trang không tìm thấy */}
             <Route path="*" element={
               <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center items-center p-4">
-                <h1 className="text-5xl sm:text-7xl font-display text-purple-500 mb-4 animate-pulse-glow">404</h1>
-                <p className="text-xl sm:text-2xl text-gray-300 mb-8 text-center">Oops! Trang bạn đang tìm kiếm dường như đã lạc vào vũ trụ MarcusFI rồi.</p>
-                <a href="/" className="inline-flex items-center group px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-white shadow-lg hover:shadow-purple-500/50">
-                  Quay Về Cổng Chính
-                </a>
+                <div className="text-center flex-grow flex flex-col justify-center items-center">
+                    {/* Giữ lại motion nếu bạn đã import framer-motion ở đâu đó hoặc bỏ đi nếu không dùng */}
+                    <h1 className="text-5xl sm:text-7xl font-display text-purple-500 mb-4 animate-pulse-glow">404</h1>
+                    <p className="text-xl sm:text-2xl text-gray-300 mb-8 text-center">Oops! Trang bạn đang tìm kiếm dường như đã lạc vào vũ trụ MarcusFI rồi.</p>
+                    {/* Sử dụng Link đã import */}
+                    <Link
+                      to="/"
+                      className="inline-flex items-center group px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-white shadow-lg hover:shadow-purple-500/50"
+                    >
+                      Quay Về Cổng Chính
+                    </Link>
+                </div>
               </div>
             } />
           </Routes>
