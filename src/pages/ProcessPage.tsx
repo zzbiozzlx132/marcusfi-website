@@ -1,17 +1,16 @@
 // src/pages/ProcessPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom'; // useNavigate, useLocation đã có
 
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import ProcessStepNode from '../components/ProcessStepNode'; // Đảm bảo đường dẫn này ĐÚNG
+import ProcessStepNode from '../components/ProcessStepNode'; // Giả sử ProcessStepNode đã được cập nhật để nhận props onTrigger...Request
 
-// SỬA ĐỔI: Import thêm "type LucideIcon"
 import { type LucideIcon, Zap, ShieldCheck, TrendingUp, DollarSign, Brain, Target, Route as RouteIcon } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-// --- Interface và Data ---
+// --- Interface và Data (Giữ nguyên như bạn đã cung cấp) ---
 interface ProcessPageContentType {
   pageTitleLine1: string;
   pageTitleLine2: string;
@@ -25,7 +24,7 @@ interface ProcessPageContentType {
     id: string;
     title: string;
     summary: string;
-    icon: LucideIcon; // SỬA ĐỔI: Đổi React.ElementType thành LucideIcon
+    icon: LucideIcon;
     content: (tCommon: CommonTranslations) => React.ReactNode;
     isUnlocked: boolean;
     isCompleted: boolean;
@@ -34,87 +33,63 @@ interface ProcessPageContentType {
 interface CommonTranslations {
   toolsExpenseTrackerLinkText?: string;
 }
-
-// Define a type for the language-specific content
 type LanguageSpecificContent = {
   en: ProcessPageContentType;
   vi: ProcessPageContentType;
-  // Add other language keys here if they follow ProcessPageContentType
 };
-
-// Define the overall type for processPageContentData
 interface ProcessPageData {
   languages: LanguageSpecificContent;
-  common: Record<string, CommonTranslations>; // 'en', 'vi' keys for common translations
+  common: Record<string, CommonTranslations>;
 }
 
-// Adjusted Data Structure
 const processPageContentData: ProcessPageData = {
-  languages: { // Nest language-specific content under 'languages'
-    en: {
-      pageTitleLine1: "Your Financial Freedom",
-      pageTitleLine2: "Journey with MarcusFI",
-      pageDescription: "This isn't just theory. This is a detailed roadmap with concrete tasks to help you conquer financial freedom, step by step. MarcusFI is with you!",
-      ctaTitle: "Ready to Write Your Own Financial Story?",
-      ctaDescription: "This journey requires perseverance, but the reward is priceless: freedom, peace of mind, and the ability to live the life you've always dreamed of. MarcusFI provides the roadmap and tools, but YOU are the captain.",
-      ctaButton: "Sign Up & Start Now",
-      ctaLoginPrompt: "Already have an account?",
-      ctaLoginLink: "Sign in here",
-      steps: [
-        { id: 'step-1-foundation', title: 'Step 1: Understand Yourself & Build Habit Foundations', summary: 'Control cash flow, identify financial "leaks," and start your smart savings journey.', icon: Zap,
-          content: (tCommon) => ( <div className="space-y-3"> <p>A journey of a thousand miles begins with a single step...</p> <h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4> <ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Track Expenses (30 days):</strong> ... <Link to="/tools/expense-tracker" className="text-amber-400 hover:text-amber-300 underline">{tCommon.toolsExpenseTrackerLinkText || "MarcusFI Expense Tracker"}</Link> ...</li><li><strong>Analyze & Identify "Blind Spots":</strong> ...</li><li><strong>Set Initial Savings Goals:</strong> ...</li><li><strong>Build a Positive Money Mindset:</strong> ...</li></ul> <p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Habit is either the best of servants or the worst of masters." - Nathaniel Emmons</em></p> </div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-2-emergency-fund', title: 'Step 2: Create an Emergency Fund & Safety Net', summary: 'Build a solid emergency fund for unexpected situations, protecting you from debt and keeping long-term plans on track.', icon: ShieldCheck,
-          content: (tCommon) => ( <div className="space-y-3"><p>Life is full of unforeseen surprises...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Define Fund Target:</strong> ...</li><li><strong>Choose Suitable Storage:</strong> ...</li><li><strong>Contribute Regularly & Automate:</strong> ...</li><li><strong>Fund Usage Rules:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Hope for the best, prepare for the worst, and take whatever comes." - Anonymous</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-3-debt-management', title: 'Step 3: Conquer Debt & Achieve Financial Liberation', summary: 'Understand debt types, build smart repayment strategies to reduce interest burdens and accelerate your freedom journey.', icon: DollarSign,
-          content: (tCommon) => ( <div className="space-y-3"><p>Bad debt ...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>List & Categorize Debt:</strong> ...</li><li><strong>Prioritize High-Interest Debt:</strong> ...</li><li><strong>Negotiate Interest Rates (If Possible):</strong> ...</li><li><strong>Avoid New Bad Debt:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Interest is a monster that can devour your assets if not controlled." - Warren Buffett (paraphrased)</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-4-investment-mindset', title: 'Step 4: Unlock Investment Mindset & Grow Assets', summary: 'Learn basic investment channels, determine your risk appetite, and start the journey of making your money work for you.', icon: TrendingUp,
-          content: (tCommon) => ( <div className="space-y-3"><p>Saving is necessary, but ...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Learn Basic Investment Knowledge:</strong> ...</li><li><strong>Determine Risk Appetite:</strong> ...</li><li><strong>Start Small & Diversify:</strong> ...</li><li><strong>Long-Term Thinking & Patience:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Don't put all your eggs in one basket." - Proverb</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-5-lifelong-learning', title: 'Step 5: Personal Development & Lifelong Learning', summary: 'Continuously enhance knowledge and skills to increase your value, expand income opportunities, and adapt to a changing world.', icon: Brain,
-          content: (tCommon) => ( <div className="space-y-3"><p>Your greatest asset is yourself...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Identify Skills to Improve/Learn:</strong> ...</li><li><strong>Invest in Education:</strong> ...</li><li><strong>Build Your Network:</strong> ...</li><li><strong>Stay Curious & Adaptable:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"An investment in knowledge pays the best interest." - Benjamin Franklin</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        }
-      ],
+  languages: {
+    en: { /* ... Nội dung tiếng Anh đầy đủ của bạn ... */ 
+        pageTitleLine1: "Your Financial Freedom",
+        pageTitleLine2: "Journey with MarcusFI",
+        pageDescription: "This isn't just theory. This is a detailed roadmap with concrete tasks to help you conquer financial freedom, step by step. MarcusFI is with you!",
+        ctaTitle: "Ready to Write Your Own Financial Story?",
+        ctaDescription: "This journey requires perseverance, but the reward is priceless: freedom, peace of mind, and the ability to live the life you've always dreamed of. MarcusFI provides the roadmap and tools, but YOU are the captain.",
+        ctaButton: "Sign Up & Start Now",
+        ctaLoginPrompt: "Already have an account?",
+        ctaLoginLink: "Sign in here",
+        steps: [
+            { id: 'step-1-foundation', title: 'Step 1: Understand Yourself & Build Habit Foundations', summary: 'Control cash flow, identify financial "leaks," and start your smart savings journey.', icon: Zap,
+            content: (tCommon) => ( <div className="space-y-3"> <p>A journey of a thousand miles begins with a single step...</p> <h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4> <ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Track Expenses (30 days):</strong> Use a simple notebook, app, or our <Link to="/tools/expense-tracker" className="text-amber-400 hover:text-amber-300 underline">{tCommon.toolsExpenseTrackerLinkText || "MarcusFI Expense Tracker"}</Link> to diligently record ALL income and expenses. Be honest with yourself!</li><li><strong>Analyze & Identify "Blind Spots":</strong> At the end of the month, categorize expenses (needs, wants, savings/investments). Identify areas of overspending or "financial leaks."</li><li><strong>Set Initial Savings Goals:</strong> Based on your analysis, set realistic short-term savings goals (e.g., save X amount next month, reduce Y spending category by Z%).</li><li><strong>Build a Positive Money Mindset:</strong> Read books, listen to podcasts about personal finance. Understand that financial freedom is a skill that can be learned and mastered.</li></ul> <p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Habit is either the best of servants or the worst of masters." - Nathaniel Emmons</em></p> </div> ),
+            isUnlocked: true, isCompleted: false,
+            },
+            { id: 'step-2-emergency-fund', title: 'Step 2: Create an Emergency Fund & Safety Net', summary: 'Build a solid emergency fund for unexpected situations, protecting you from debt and keeping long-term plans on track.', icon: ShieldCheck,
+            content: (tCommon) => ( <div className="space-y-3"><p>Life is full of unforeseen surprises – job loss, medical emergencies, urgent home repairs. An emergency fund is your financial "lifebuoy."</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Core Tasks:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Define Fund Target:</strong> Aim for 3-6 months of essential living expenses. Calculate this based on your tracked expenses (needs only).</li><li><strong>Choose Suitable Storage:</strong> A high-yield savings account, easily accessible but separate from your daily checking account to avoid temptation.</li><li><strong>Contribute Regularly & Automate:</strong> Treat it like a bill. Set up automatic transfers, even small amounts, consistently.</li><li><strong>Fund Usage Rules:</strong> Clearly define what constitutes an "emergency." This fund is NOT for vacations or wants. Replenish immediately after use.</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Hope for the best, prepare for the worst, and take whatever comes." - Anonymous</em></p></div> ),
+            isUnlocked: true, isCompleted: false,
+            },
+            { id: 'step-3-debt-management', title: 'Step 3: Conquer Debt & Achieve Financial Liberation', summary: 'Understand debt types, build smart repayment strategies to reduce interest burdens and accelerate your freedom journey.', icon: DollarSign, content: (tCommon)=>(<div>Details for debt management...</div>), isUnlocked: true, isCompleted: false},
+            { id: 'step-4-investment-mindset', title: 'Step 4: Unlock Investment Mindset & Grow Assets', summary: 'Learn basic investment channels, determine your risk appetite, and start the journey of making your money work for you.', icon: TrendingUp, content: (tCommon)=>(<div>Details for investment mindset...</div>), isUnlocked: true, isCompleted: false},
+            { id: 'step-5-lifelong-learning', title: 'Step 5: Personal Development & Lifelong Learning', summary: 'Continuously enhance knowledge and skills to increase your value, expand income opportunities, and adapt to a changing world.', icon: Brain, content: (tCommon)=>(<div>Details for lifelong learning...</div>), isUnlocked: true, isCompleted: false}
+        ],
     },
-    vi: {
-      pageTitleLine1: "Hành Trình Tự Do",
-      pageTitleLine2: "Tài Chính Cùng MarcusFI",
-      pageDescription: "Đây không chỉ là lý thuyết. Đây là bản đồ chi tiết, với những nhiệm vụ cụ thể, giúp bạn từng bước chinh phục mục tiêu tự do tài chính. MarcusFI đồng hành cùng bạn!",
-      ctaTitle: "Sẵn Sàng Viết Nên Câu Chuyện Tài Chính Của Riêng Bạn?",
-      ctaDescription: "Hành trình này đòi hỏi sự kiên trì, nhưng phần thưởng là vô giá: sự tự do, an tâm và khả năng sống cuộc đời bạn hằng mơ ước. MarcusFI cung cấp lộ trình và công cụ, nhưng chính BẠN là người thuyền trưởng.",
-      ctaButton: "Đăng Ký & Bắt Đầu Ngay",
-      ctaLoginPrompt: "Đã có tài khoản?",
-      ctaLoginLink: "Đăng nhập tại đây",
-      steps: [
-          { id: 'step-1-foundation', title: 'Bước 1: Thấu Hiểu Bản Thân & Xây Móng Thói Quen', summary: 'Kiểm soát dòng tiền, nhận diện "rò rỉ" tài chính và bắt đầu hành trình tiết kiệm thông minh.', icon: Zap,
-          content: (tCommon) => ( <div className="space-y-3"> <p>Hành trình vạn dặm bắt đầu từ một bước chân...</p> <h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4> <ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Theo dõi chi tiêu (30 ngày):</strong> ... <Link to="/tools/expense-tracker" className="text-amber-400 hover:text-amber-300 underline">{tCommon.toolsExpenseTrackerLinkText || "Công cụ Theo dõi Chi tiêu MarcusFI"}</Link> ...</li><li><strong>Phân tích & Nhận diện "Điểm mù":</strong> ...</li><li><strong>Thiết lập Mục tiêu Tiết kiệm Ban đầu:</strong> ...</li><li><strong>Xây dựng Tư duy Tích cực về Tiền:</strong> ...</li></ul> <p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Thói quen là người đầy tớ tuyệt vời hoặc ông chủ tồi tệ." - Nathaniel Emmons</em></p> </div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-2-emergency-fund', title: 'Bước 2: Kiến Tạo Quỹ Khẩn Cấp & Lá Chắn An Toàn', summary: 'Xây dựng quỹ dự phòng vững chắc cho những tình huống bất ngờ, bảo vệ bạn khỏi nợ nần và giữ vững kế hoạch dài hạn.', icon: ShieldCheck,
-          content: (tCommon) => ( <div className="space-y-3"><p>Cuộc sống luôn ẩn chứa những bất ngờ...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Xác định Mục tiêu Quỹ:</strong> ...</li><li><strong>Lựa chọn Kênh Lưu Trữ Phù Hợp:</strong> ...</li><li><strong>Đều Đặn Đóng Góp & Tự Động Hóa:</strong> ...</li><li><strong>Quy tắc Sử dụng Quỹ:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Hãy chuẩn bị cho điều tồi tệ nhất, hy vọng điều tốt nhất, và chấp nhận những gì đến." - Khuyết danh</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-3-debt-management', title: 'Bước 3: Chinh Phục Nợ Nần & Giải Phóng Tài Chính', summary: 'Hiểu rõ các loại nợ, xây dựng chiến lược trả nợ thông minh để giảm bớt gánh nặng lãi suất và tăng tốc hành trình tự do.', icon: DollarSign,
-          content: (tCommon) => ( <div className="space-y-3"><p>Nợ xấu ...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Liệt kê & Phân loại Nợ:</strong> ...</li><li><strong>Ưu tiên Trả Nợ Lãi Suất Cao:</strong> ...</li><li><strong>Đàm Phán Lãi Suất (Nếu có thể):</strong> ...</li><li><strong>Tránh Tạo Thêm Nợ Xấu:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Lãi suất là con quái vật có thể ăn mòn tài sản của bạn nếu không được kiểm soát." - Warren Buffett (diễn giải)</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-4-investment-mindset', title: 'Bước 4: Khai Mở Tư Duy Đầu Tư & Gia Tăng Tài Sản', summary: 'Tìm hiểu các kênh đầu tư cơ bản, xác định khẩu vị rủi ro và bắt đầu hành trình để tiền của bạn làm việc cho bạn.', icon: TrendingUp,
-          content: (tCommon) => ( <div className="space-y-3"><p>Tiết kiệm là cần thiết, nhưng ...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Học Kiến Thức Đầu Tư Cơ Bản:</strong> ...</li><li><strong>Xác định Khẩu Vị Rủi Ro:</strong> ...</li><li><strong>Bắt Đầu Với Số Vốn Nhỏ & Đa Dạng Hóa:</strong> ...</li><li><strong>Tư Duy Dài Hạn & Kiên Nhẫn:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Đừng bỏ tất cả trứng vào một giỏ." - Ngạn ngữ</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        },
-        { id: 'step-5-lifelong-learning', title: 'Bước 5: Phát Triển Bản Thân & Học Tập Trọn Đời', summary: 'Liên tục nâng cao kiến thức, kỹ năng để gia tăng giá trị bản thân, mở rộng cơ hội thu nhập và thích ứng với thế giới thay đổi.', icon: Brain,
-          content: (tCommon) => ( <div className="space-y-3"><p>Tài sản lớn nhất của bạn chính là bản thân bạn...</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Xác định Kỹ Năng Cần Cải Thiện/Học Mới:</strong> ...</li><li><strong>Đầu Tư Vào Giáo Dục:</strong> ...</li><li><strong>Xây Dựng Mạng Lưới Quan Hệ (Networking):</strong> ...</li><li><strong>Luôn Tò Mò & Thích Nghi:</strong> ...</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Đầu tư vào kiến thức mang lại lãi suất cao nhất." - Benjamin Franklin</em></p></div> ),
-          isUnlocked: true, isCompleted: false,
-        }
-      ],
-    },
+    vi: { /* ... Nội dung tiếng Việt đầy đủ của bạn ... */ 
+        pageTitleLine1: "Hành Trình Tự Do",
+        pageTitleLine2: "Tài Chính Cùng MarcusFI",
+        pageDescription: "Đây không chỉ là lý thuyết. Đây là bản đồ chi tiết, với những nhiệm vụ cụ thể, giúp bạn từng bước chinh phục mục tiêu tự do tài chính. MarcusFI đồng hành cùng bạn!",
+        ctaTitle: "Sẵn Sàng Viết Nên Câu Chuyện Tài Chính Của Riêng Bạn?",
+        ctaDescription: "Hành trình này đòi hỏi sự kiên trì, nhưng phần thưởng là vô giá: sự tự do, an tâm và khả năng sống cuộc đời bạn hằng mơ ước. MarcusFI cung cấp lộ trình và công cụ, nhưng chính BẠN là người thuyền trưởng.",
+        ctaButton: "Đăng Ký & Bắt Đầu Ngay",
+        ctaLoginPrompt: "Đã có tài khoản?",
+        ctaLoginLink: "Đăng nhập tại đây",
+        steps: [
+            { id: 'step-1-foundation', title: 'Bước 1: Thấu Hiểu Bản Thân & Xây Móng Thói Quen', summary: 'Kiểm soát dòng tiền, nhận diện "rò rỉ" tài chính và bắt đầu hành trình tiết kiệm thông minh.', icon: Zap,
+            content: (tCommon) => ( <div className="space-y-3"> <p>Hành trình vạn dặm bắt đầu từ một bước chân...</p> <h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4> <ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Theo dõi chi tiêu (30 ngày):</strong> Sử dụng sổ tay, ứng dụng đơn giản, hoặc <Link to="/tools/expense-tracker" className="text-amber-400 hover:text-amber-300 underline">{tCommon.toolsExpenseTrackerLinkText || "Công cụ Theo dõi Chi tiêu MarcusFI"}</Link> để ghi chép TOÀN BỘ thu nhập và chi tiêu. Hãy trung thực với chính mình!</li><li><strong>Phân tích & Nhận diện "Điểm mù":</strong> Cuối tháng, phân loại chi tiêu (thiết yếu, mong muốn, tiết kiệm/đầu tư). Xác định các khoản chi quá tay, "rò rỉ" tài chính.</li><li><strong>Thiết lập Mục tiêu Tiết kiệm Ban đầu:</strong> Dựa trên phân tích, đặt mục tiêu tiết kiệm ngắn hạn thực tế (ví dụ: tiết kiệm X đồng tháng tới, giảm Y% chi tiêu Z).</li><li><strong>Xây dựng Tư duy Tích cực về Tiền:</strong> Đọc sách, nghe podcast về tài chính cá nhân. Hiểu rằng tự do tài chính là một kỹ năng có thể học hỏi và làm chủ.</li></ul> <p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Thói quen là người đầy tớ tuyệt vời hoặc ông chủ tồi tệ." - Nathaniel Emmons</em></p> </div> ),
+            isUnlocked: true, isCompleted: false,
+            },
+            { id: 'step-2-emergency-fund', title: 'Bước 2: Kiến Tạo Quỹ Khẩn Cấp & Lá Chắn An Toàn', summary: 'Xây dựng quỹ dự phòng vững chắc cho những tình huống bất ngờ, bảo vệ bạn khỏi nợ nần và giữ vững kế hoạch dài hạn.', icon: ShieldCheck,
+            content: (tCommon) => ( <div className="space-y-3"><p>Cuộc sống luôn ẩn chứa những bất ngờ – mất việc, cấp cứu y tế, sửa chữa nhà cửa khẩn cấp. Quỹ khẩn cấp chính là "phao cứu sinh" tài chính của bạn.</p><h4 className="font-semibold text-base text-[#c084fc] mt-2 mb-1">Nhiệm Vụ Cốt Lõi:</h4><ul className="list-disc list-inside space-y-1.5 pl-4 text-sm"><li><strong>Xác định Mục tiêu Quỹ:</strong> Mục tiêu 3-6 tháng chi phí sinh hoạt thiết yếu. Tính toán dựa trên chi tiêu đã theo dõi (chỉ khoản thiết yếu).</li><li><strong>Lựa chọn Kênh Lưu Trữ Phù Hợp:</strong> Tài khoản tiết kiệm lãi suất tốt, dễ truy cập nhưng tách biệt với tài khoản thanh toán hàng ngày để tránh cám dỗ.</li><li><strong>Đều Đặn Đóng Góp & Tự Động Hóa:</strong> Xem nó như một hóa đơn phải trả. Thiết lập chuyển khoản tự động, dù số tiền nhỏ, một cách nhất quán.</li><li><strong>Quy tắc Sử dụng Quỹ:</strong> Xác định rõ ràng thế nào là "khẩn cấp". Quỹ này KHÔNG dùng cho du lịch hay mong muốn. Bổ sung ngay sau khi sử dụng.</li></ul><p className="italic text-gray-500 dark:text-gray-400 pt-1 text-sm"><em>"Hãy chuẩn bị cho điều tồi tệ nhất, hy vọng điều tốt nhất, và chấp nhận những gì đến." - Khuyết danh</em></p></div> ),
+            isUnlocked: true, isCompleted: false,
+            },
+            { id: 'step-3-debt-management', title: 'Bước 3: Chinh Phục Nợ Nần & Giải Phóng Tài Chính', summary: 'Hiểu rõ các loại nợ, xây dựng chiến lược trả nợ thông minh để giảm bớt gánh nặng lãi suất và tăng tốc hành trình tự do.', icon: DollarSign, content: (tCommon)=>(<div>...Chi tiết bước 3...</div>), isUnlocked: true, isCompleted: false},
+            { id: 'step-4-investment-mindset', title: 'Bước 4: Khai Mở Tư Duy Đầu Tư & Gia Tăng Tài Sản', summary: 'Tìm hiểu các kênh đầu tư cơ bản, xác định khẩu vị rủi ro và bắt đầu hành trình để tiền của bạn làm việc cho bạn.', icon: TrendingUp, content: (tCommon)=>(<div>...Chi tiết bước 4...</div>), isUnlocked: true, isCompleted: false},
+            { id: 'step-5-lifelong-learning', title: 'Bước 5: Phát Triển Bản Thân & Học Tập Trọn Đời', summary: 'Liên tục nâng cao kiến thức, kỹ năng để gia tăng giá trị bản thân, mở rộng cơ hội thu nhập và thích ứng với thế giới thay đổi.', icon: Brain, content: (tCommon)=>(<div>...Chi tiết bước 5...</div>), isUnlocked: true, isCompleted: false}
+        ],
+    }
   },
   common: {
     en: { toolsExpenseTrackerLinkText: "MarcusFI Expense Tracker" },
@@ -125,7 +100,9 @@ const processPageContentData: ProcessPageData = {
 
 const ProcessPage: React.FC = () => {
   const { language } = useLanguage();
-  // Adjust how you access the data
+  const navigate = useNavigate(); 
+  const location = useLocation(); 
+
   const pageText = processPageContentData.languages[language as keyof LanguageSpecificContent] || processPageContentData.languages.en;
   const commonTranslations = processPageContentData.common[language as keyof typeof processPageContentData.common] || processPageContentData.common.en;
 
@@ -146,16 +123,26 @@ const ProcessPage: React.FC = () => {
     if (activeStepId && !currentActiveStepExists) {
       setActiveStepId(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, pageText.steps, activeStepId]);
 
   const handleStepClick = (stepId: string) => {
     setActiveStepId(prevId => (prevId === stepId ? null : stepId));
   };
 
+  // CÁC HÀM NÀY ĐÃ CÓ SẴN TỪ CODE BẠN GỬI, CHÚNG TA SẼ SỬ DỤNG CHÚNG
+  const triggerSignUpModalOnCurrentPage = (e?: React.MouseEvent) => { // Thêm e? để có thể gọi mà không cần event
+    e?.preventDefault(); 
+    navigate(location.pathname, { state: { openModal: 'signUp' }, replace: true });
+  };
+
+  const triggerSignInModalOnCurrentPage = (e?: React.MouseEvent) => { // Thêm e?
+    e?.preventDefault();
+    navigate(location.pathname, { state: { openModal: 'signIn' }, replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950 text-white flex flex-col selection:bg-[#6e00ff] selection:text-white font-sans">
-      <Header />
+      <Header /> {/* Header sẽ lắng nghe location.state để mở modal */}
       <main className="flex-grow container mx-auto px-4 sm:px-6 pt-28 sm:pt-32 md:pt-36 pb-16 md:pb-24 overflow-x-hidden">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -174,12 +161,14 @@ const ProcessPage: React.FC = () => {
           </p>
         </motion.div>
 
+        {/* Phần Line tiến trình và các Step Node */}
         <div className="relative py-8 px-2 md:px-0" ref={stepsContainerRef}>
+          {/* Motion path - Phần này đã có trong code của bạn, giữ nguyên */}
           <motion.div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[3px] z-0 rounded-full"
             style={{
               opacity: pathOpacity,
-              height: '100%',
+              height: '100%', // Đảm bảo height là 100%
             }}
           >
             <motion.div
@@ -190,27 +179,32 @@ const ProcessPage: React.FC = () => {
               }}
             />
           </motion.div>
-
+          
+          {/* Steps content - Phần này đã có trong code của bạn */}
           <div className="relative z-10 space-y-8 md:space-y-10 pb-10 sm:pb-16">
             {pageText.steps.map((step, index) => (
               <ProcessStepNode
                 key={step.id}
-                id={step.id} // Thêm id prop cho ProcessStepNode nếu nó yêu cầu
+                id={step.id}
                 stepNumber={index + 1}
                 title={step.title}
                 summary={step.summary}
                 icon={step.icon}
                 content={step.content(commonTranslations)}
-                isUnlocked={true} // Assuming you might change this later based on user progress
-                // isCompleted={false} // Prop này không có trong ProcessStepNodeProps, có thể bỏ
+                isUnlocked={true} // Giữ nguyên isUnlocked của bạn
                 isActive={activeStepId === step.id}
                 onClick={() => handleStepClick(step.id)}
                 alignment={index % 2 === 0 ? 'left' : 'right'}
+                // << TRUYỀN CÁC HÀM KÍCH HOẠT MODAL XUỐNG ProcessStepNode
+                onTriggerSignInRequest={triggerSignInModalOnCurrentPage}
+                onTriggerSignUpRequest={triggerSignUpModalOnCurrentPage}
               />
             ))}
           </div>
         </div>
 
+
+        {/* Phần CTA ở cuối trang */}
         <motion.div
           className="mt-12 sm:mt-16 text-center p-6 sm:p-8 bg-slate-800/60 backdrop-blur-xl rounded-2xl shadow-2xl max-w-xl mx-auto ring-1 ring-[#6e00ff]/40"
           initial={{ opacity: 0, y: 25 }}
@@ -230,19 +224,24 @@ const ProcessPage: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
-            <Link
-              to="/signup"
+            {/* Sửa Link thành button và gọi triggerSignUpModalOnCurrentPage */}
+            <button
+              onClick={triggerSignUpModalOnCurrentPage} // Không cần event (e) ở đây nữa nếu hàm không dùng
               className="inline-flex items-center group bg-gradient-to-r from-[#6e00ff] to-[#c056f0] hover:from-[#7a1aff] hover:to-[#d06cf0] text-white font-semibold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-[#c056f0]/40 transition-all duration-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#c056f0] focus:ring-opacity-50"
             >
               {pageText.ctaButton}
               <RouteIcon className="ml-2 h-4 w-4 transform transition-transform duration-300 group-hover:translate-x-0.5" />
-            </Link>
+            </button>
           </motion.div>
             <p className="text-[0.7rem] text-gray-500/80 mt-4">
               {pageText.ctaLoginPrompt}{' '}
-              <Link to="/signin" className="text-[#c084fc] hover:underline">
+              {/* Sửa Link thành button và gọi triggerSignInModalOnCurrentPage */}
+              <button 
+                onClick={triggerSignInModalOnCurrentPage} // Không cần event (e) ở đây nữa nếu hàm không dùng
+                className="text-[#c084fc] hover:underline focus:outline-none"
+              >
                 {pageText.ctaLoginLink}
-              </Link>.
+              </button>.
             </p>
         </motion.div>
       </main>

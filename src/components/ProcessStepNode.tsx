@@ -1,8 +1,9 @@
 // src/components/ProcessStepNode.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Lock, ChevronDown, ChevronUp, LucideIcon, BookOpen } from 'lucide-react'; // Bỏ UserPlus, LogIn
-import { Link } from 'react-router-dom';
+import { CheckCircle, Lock, ChevronDown, ChevronUp, LucideIcon, BookOpen } from 'lucide-react';
+// Bỏ Link vì chúng ta sẽ dùng button để gọi prop, không điều hướng trực tiếp từ đây
+// import { Link } from 'react-router-dom'; 
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProcessStepNodeProps {
@@ -16,14 +17,15 @@ interface ProcessStepNodeProps {
   isActive: boolean;
   alignment: 'left' | 'right';
   onClick: () => void;
+  onTriggerSignInRequest: () => void; // << PROP MỚI
+  onTriggerSignUpRequest: () => void; // << PROP MỚI
 }
 
-// Nội dung cho CTA bên trong ProcessStepNode, cập nhật text cho Sign In/Sign Up
 const stepNodeCtaContent: Record<string, {
-    ctaTextIntro: string; // Ví dụ: "Để theo dõi tiến trình..."
-    signInLinkText: string; // Text cho link "Sign In"
-    signUpLinkText: string; // Text cho link "Sign Up"
-    orText: string; // Chữ "hoặc" hoặc "or"
+    ctaTextIntro: string;
+    signInLinkText: string;
+    signUpLinkText: string;
+    orText: string;
 }> = {
     en: {
         ctaTextIntro: "To track progress, get detailed tasks, and receive personalized support, please",
@@ -46,15 +48,17 @@ const ProcessStepNode: React.FC<ProcessStepNodeProps> = ({
   summary,
   icon: Icon,
   content,
-  isUnlocked, // Luôn là true cho FE show
+  isUnlocked,
   isActive,
   alignment,
   onClick,
+  onTriggerSignInRequest, // << NHẬN PROP MỚI
+  onTriggerSignUpRequest, // << NHẬN PROP MỚI
 }) => {
   const { language } = useLanguage();
   const ctaText = stepNodeCtaContent[language] || stepNodeCtaContent.en;
 
-  const cardVariants = { /* ... giữ nguyên từ phiên bản trước ... */
+  const cardVariants = {
     hidden: { opacity: 0, x: alignment === 'left' ? -70 : 70, scale: 0.95 },
     visible: {
       opacity: 1,
@@ -64,12 +68,11 @@ const ProcessStepNode: React.FC<ProcessStepNodeProps> = ({
     },
   };
 
-  const contentVariants = { /* ... giữ nguyên từ phiên bản trước ... */
+  const contentVariants = {
     collapsed: { opacity: 0, height: 0, marginTop: 0, y: -10 },
     expanded: { opacity: 1, height: 'auto', marginTop: '0.75rem', y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] }},
   };
 
-  // Styling (giữ nguyên hoặc điều chỉnh nhẹ nếu cần)
   const baseBg = isActive ? 'bg-slate-700/60' : 'bg-slate-800/80';
   const hoverBg = 'hover:bg-slate-700/70';
   const ringColor = isActive ? 'ring-2 ring-[#6e00ff] shadow-xl shadow-[#6e00ff]/20' : 'ring-1 ring-slate-700/80';
@@ -104,13 +107,14 @@ const ProcessStepNode: React.FC<ProcessStepNodeProps> = ({
 
       <div
         className={`rounded-xl shadow-lg transition-all duration-300 ease-in-out ${ringColor} ${baseBg} ${hoverBg} backdrop-blur-md cursor-pointer`}
-        onClick={onClick}
+        onClick={onClick} // Click vào cả card để mở/đóng content
         aria-expanded={isActive}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
       >
         <header className="p-4 sm:p-5 flex justify-between items-center min-h-[5rem] sm:min-h-[5.5rem]">
+          {/* ... (Nội dung header của step node giữ nguyên) ... */}
           <div className="flex items-center flex-grow min-w-0">
             <motion.div
               className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mr-3 text-base sm:text-lg font-bold
@@ -146,34 +150,30 @@ const ProcessStepNode: React.FC<ProcessStepNodeProps> = ({
               <div className="prose prose-xs sm:prose-sm prose-invert max-w-none mt-3 text-slate-300/90 links:text-amber-400 hover:links:text-amber-300 selection:bg-[#6e00ff] selection:text-white">
                 {content}
               </div>
-              {/* CTA Đăng nhập / Đăng ký - Giữ nguyên style khung, chỉ thay đổi text */}
+              {/* CTA Đăng nhập / Đăng ký */}
               <div className="mt-5 p-3 bg-gradient-to-r from-[#6e00ff]/10 via-transparent to-transparent border-l-4 border-[#6e00ff] rounded-md text-center text-xs sm:text-sm">
                 <BookOpen size={18} className="mx-auto mb-1.5 text-[#c084fc]" />
                 <p className="text-purple-200/80">
                   {ctaText.ctaTextIntro}{' '}
-                  {/* Link Sign Up */}
-                  <Link
-                    to="/signup" // Hoặc dùng alert nếu chưa có trang
+                  <button
                     onClick={(e) => {
-                        e.stopPropagation();
-                        alert('Trang Đăng Ký sắp ra mắt!');
+                        e.stopPropagation(); // Ngăn sự kiện click lan ra card cha
+                        onTriggerSignUpRequest(); // << GỌI PROP
                     }}
-                    className="font-semibold text-amber-400 hover:text-amber-300 underline"
+                    className="font-semibold text-amber-400 hover:text-amber-300 underline focus:outline-none"
                   >
                     {ctaText.signUpLinkText}
-                  </Link>
+                  </button>
                   {' '}{ctaText.orText}{' '}
-                  {/* Link Sign In */}
-                  <Link
-                    to="/signin" // Hoặc dùng alert nếu chưa có trang
+                  <button
                     onClick={(e) => {
-                        e.stopPropagation();
-                        alert('Trang Đăng Nhập sắp ra mắt!');
+                        e.stopPropagation(); // Ngăn sự kiện click lan ra card cha
+                        onTriggerSignInRequest(); // << GỌI PROP
                     }}
-                    className="font-semibold text-amber-400 hover:text-amber-300 underline"
+                    className="font-semibold text-amber-400 hover:text-amber-300 underline focus:outline-none"
                   >
                     {ctaText.signInLinkText}
-                  </Link>
+                  </button>
                   !
                 </p>
               </div>

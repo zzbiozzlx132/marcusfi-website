@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { motion } from 'framer-motion';
 
 const Hero: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,49 +35,72 @@ const Hero: React.FC = () => {
   const t = content[language];
 
   return (
-    <section className="min-h-screen flex flex-col justify-center pt-32 pb-20 bg-gradient-to-b from-white to-[#f8f0ff]">
+    <motion.section 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="min-h-screen flex flex-col justify-center pt-32 pb-20 bg-gradient-to-b from-white to-[#f8f0ff]"
+    >
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
+          <motion.h1 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-4xl md:text-5xl font-bold leading-tight mb-6"
+          >
             {t.title}{' '}
             <span className="bg-gradient-to-r from-[#6e00ff] to-[#ff007a] text-transparent bg-clip-text">
               {t.titleHighlight}
             </span>
-          </h1>
+          </motion.h1>
           
-          <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+          <motion.p 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto"
+          >
             {t.description}
-          </p>
+          </motion.p>
           
-          <form onSubmit={handleSubmit} className="group max-w-md mx-auto mb-4">
-            {/* Thẻ div chứa input và button */}
+          <motion.form 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            onSubmit={handleSubmit} 
+            className="group max-w-md mx-auto mb-4"
+          >
             <div className="relative flex items-center transform transition-transform duration-300 hover:scale-[1.02]">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t.emailPlaceholder}
-                // py-3 của input sẽ xác định chiều cao tổng thể của khu vực này
-                className="w-full px-4 py-3 rounded-full border border-[#c084fc] focus:border-[#6e00ff] focus:ring-2 focus:ring-[#6e00ff]/20 outline-none transition-all pr-32 md:pr-40 lg:pr-48" // Tăng padding-right nếu cần cho nút dài hơn
+                className="w-full px-4 py-3 rounded-full border border-[#c084fc] focus:border-[#6e00ff] focus:ring-2 focus:ring-[#6e00ff]/20 outline-none transition-all pr-32 md:pr-40 lg:pr-48"
                 required
               />
               <button
                 type="submit"
-                // Đã thêm top-1, bottom-1 và loại bỏ style={{ height: ... }}
                 className="absolute top-1 bottom-1 right-1 bg-gradient-to-r from-[#8f00ff] to-[#e100ff] hover:from-[#9e00ff] hover:to-[#ff00e0] text-white font-medium py-2 px-6 rounded-full transition-all duration-300 flex items-center justify-center whitespace-nowrap text-sm"
               >
                 {t.buttonText}
                 <Send className="ml-2 h-4 w-4" />
               </button>
             </div>
-          </form>
+          </motion.form>
           
-          <p className="text-sm text-gray-500">
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="text-sm text-gray-500"
+          >
             {t.privacyNote}
-          </p>
+          </motion.p>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 
