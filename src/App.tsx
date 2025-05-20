@@ -4,9 +4,11 @@ import { BrowserRouter, Routes, Route, Outlet, Link } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
+// << 1. IMPORT MUSIC PLAYER >>
+import MusicPlayer from './components/MusicPlayer'; // Đảm bảo đường dẫn này đúng
+
 // Layout Components
-// Giả sử MainLayout đã được tách ra file src/components/MainLayout.tsx
-import MainLayout from './components/MainLayout'; // << 1. IMPORT MainLayout TỪ FILE RIÊNG
+import MainLayout from './components/MainLayout';
 import ScrollToTop from './components/ScrollToTop';
 
 // Page Components (Sử dụng lazy loading)
@@ -26,9 +28,24 @@ const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 
+// << 2. ĐỊNH NGHĨA DANH SÁCH NHẠC VỚI FILE LOCAL >>
+// THAY THẾ TÊN FILE CHO ĐÚNG VỚI FILE TRONG THƯ MỤC /public CỦA BẠN
+const myMusicTracks = [
+  { id: 'local_track1', title: 'Nhạc Nền 1', src: '/music1.mp3' },
+  { id: 'local_track2', title: 'Nhạc Nền 2', src: '/music2.mp3' },
+  { id: 'local_track3', title: 'Nhạc Nền 3', src: '/music3.mp3' },
+  { id: 'local_track4', title: 'Nhạc Nền 4', src: '/music4.mp3' },
+  { id: 'local_track5', title: 'Nhạc Nền 5', src: '/music5.mp3' },
+  { id: 'local_track6', title: 'Nhạc Nền 6', src: '/music6.mp3' },
+  { id: 'local_track7', title: 'Nhạc Nền 7', src: '/music7.mp3' },
+  { id: 'local_track8', title: 'Nhạc Nền 8', src: '/music8.mp3' },
+  { id: 'local_track9', title: 'Nhạc Nền 9', src: '/music9.mp3' },
+  { id: 'local_track10', title: 'Nhạc Nền 10', src: '/music10.mp3' },
+  // Hãy đảm bảo bạn có đủ 10 file nhạc từ music1.mp3 đến music10.mp3 trong thư mục public
+  // Hoặc điều chỉnh danh sách này cho phù hợp với số lượng và tên file thực tế của bạn.
+];
 
-// Component Loading Spinner
-// << 2. THÊM "export" ĐỂ CÁC FILE KHÁC CÓ THỂ IMPORT
+
 export const LoadingSpinner: React.FC = () => (
   <div className="flex justify-center items-center h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950">
     <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-purple-400"></div>
@@ -36,20 +53,15 @@ export const LoadingSpinner: React.FC = () => (
   </div>
 );
 
-// Bỏ định nghĩa MainLayout ở đây nếu bạn đã tách ra file src/components/MainLayout.tsx
-// const MainLayout: React.FC = () => { ... }; 
-
 function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter>
           <ScrollToTop />
-          {/* Suspense ở đây là fallback chung cho toàn bộ Routes nếu cần */}
-          {/* Tuy nhiên, MainLayout cũng có Suspense riêng cho Outlet của nó */}
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
-              {/* Các trang sử dụng MainLayout (có Header, Footer chung) */}
+              {/* Các trang sử dụng MainLayout */}
               <Route element={<MainLayout />}>
                 <Route path="/" element={
                   <>
@@ -69,7 +81,7 @@ function App() {
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               </Route>
 
-              {/* Các trang có layout riêng hoặc không dùng MainLayout */}
+              {/* Các trang có layout riêng */}
               <Route path="/process" element={<ProcessPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -91,6 +103,14 @@ function App() {
               } />
             </Routes>
           </Suspense>
+          
+          {/* << 3. RENDER MUSIC PLAYER >> */}
+          {/* Component này sẽ được hiển thị trên tất cả các trang */}
+          {/* Chỉ render nếu có danh sách nhạc */}
+          {myMusicTracks.length > 0 && <MusicPlayer tracks={myMusicTracks} initialAutoplay={false} />}
+          {/* Bạn có thể đổi initialAutoplay={true} nếu vẫn muốn thử tự động phát, */}
+          {/* nhưng false sẽ đáng tin cậy hơn và yêu cầu người dùng nhấp để phát. */}
+
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
