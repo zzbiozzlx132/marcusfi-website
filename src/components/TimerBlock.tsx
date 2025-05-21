@@ -37,16 +37,16 @@ const NOTIFICATION_SOUNDS = [
 
 // --- DANH SÁCH NHẠC NỀN (CẬP NHẬT THEO MẪU CHO GITHUB PAGES) ---
 const BACKGROUND_MUSIC_TRACKS = [
-  { id: 'local_track1', title: 'Nhạc Nền 1', src: '/marcusfi-website/music/music1.mp3' },
-  { id: 'local_track2', title: 'Nhạc Nền 2', src: '/marcusfi-website/music/music2.mp3' },
-  { id: 'local_track3', title: 'Nhạc Nền 3', src: '/marcusfi-website/music/music3.mp3' },
-  { id: 'local_track4', title: 'Nhạc Nền 4', src: '/marcusfi-website/music/music4.mp3' },
-  { id: 'local_track5', title: 'Nhạc Nền 5', src: '/marcusfi-website/music/music5.mp3' },
-  { id: 'local_track6', title: 'Nhạc Nền 6', src: '/marcusfi-website/music/music6.mp3' },
-  { id: 'local_track7', title: 'Nhạc Nền 7', src: '/marcusfi-website/music/music7.mp3' },
-  { id: 'local_track8', title: 'Nhạc Nền 8', src: '/marcusfi-website/music/music8.mp3' },
-  { id: 'local_track9', title: 'Nhạc Nền 9', src: '/marcusfi-website/music/music9.mp3' },
-  { id: 'local_track10', title: 'Nhạc Nền 10', src: '/marcusfi-website/music/music10.mp3' },
+  { id: 'local_track1', title: 'Nhạc Nền 1', src: '/marcusfi-website/music1.mp3' },
+  { id: 'local_track2', title: 'Nhạc Nền 2', src: '/marcusfi-website/music2.mp3' },
+  { id: 'local_track3', title: 'Nhạc Nền 3', src: '/marcusfi-website/music3.mp3' },
+  { id: 'local_track4', title: 'Nhạc Nền 4', src: '/marcusfi-website/music4.mp3' },
+  { id: 'local_track5', title: 'Nhạc Nền 5', src: '/marcusfi-website/music5.mp3' },
+  { id: 'local_track6', title: 'Nhạc Nền 6', src: '/marcusfi-website/music6.mp3' },
+  { id: 'local_track7', title: 'Nhạc Nền 7', src: '/marcusfi-website/music7.mp3' },
+  { id: 'local_track8', title: 'Nhạc Nền 8', src: '/marcusfi-website/music8.mp3' },
+  { id: 'local_track9', title: 'Nhạc Nền 9', src: '/marcusfi-website/music9.mp3' },
+  { id: 'local_track10', title: 'Nhạc Nền 10', src: '/marcusfi-website/music10.mp3' },
 ];
 
 
