@@ -27,12 +27,12 @@ interface TimerSettings {
 // QUAN TRỌNG: Nếu file âm báo của bạn nằm trong /public/marcusfi-website/sound/
 // hãy cập nhật các đường dẫn url dưới đây, ví dụ: "/marcusfi-website/sound/ntf-snd-01.mp3"
 const NOTIFICATION_SOUNDS = [
-  { name: "Thông báo 1", url: "/sound/ntf-snd-01.mp3" },
-  { name: "Thông báo 2", url: "/sound/ntf-snd-02.mp3" },
-  { name: "Thông báo 3", url: "/sound/ntf-snd-03.mp3" },
-  { name: "Thông báo 4", url: "/sound/ntf-snd-04.mp3" },
-  { name: "Thông báo 5", url: "/sound/ntf-snd-05.mp3" },
-  { name: "Thông báo 6", url: "/sound/ntf-snd-06.mp3" },
+  { name: "Thông báo 1", url: "/marcusfi-website/sound/ntf-snd-01.mp3" },
+  { name: "Thông báo 2", url: "/marcusfi-website/sound/ntf-snd-02.mp3" },
+  { name: "Thông báo 3", url: "/marcusfi-website/sound/ntf-snd-03.mp3" },
+  { name: "Thông báo 4", url: "/marcusfi-website/sound/ntf-snd-04.mp3" },
+  { name: "Thông báo 5", url: "/marcusfi-website/sound/ntf-snd-05.mp3" },
+  { name: "Thông báo 6", url: "/marcusfi-website/sound/ntf-snd-06.mp3" },
 ];
 
 // --- DANH SÁCH NHẠC NỀN (CẬP NHẬT THEO MẪU CHO GITHUB PAGES) ---
