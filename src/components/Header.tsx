@@ -1,6 +1,6 @@
 // src/components/Header.tsx
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // << THÊM useCallback
-import { Menu, X, BarChart3, UserCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Menu, X, BarChart3, UserCircle, ChevronDown, Settings as SettingsIcon, Clock, DollarSign } from 'lucide-react'; // Thêm icon
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSwitch from './LanguageSwitch';
@@ -13,6 +13,11 @@ interface HeaderContentType {
   process: string;
   blog: string;
   resources: string;
+  tools: string; // << MỚI
+  timerBlock: string; // << MỚI
+  fiCalculator: string; // << MỚI
+  tool3: string; // << MỚI
+  tool4: string; // << MỚI
   signIn: string;
   signUp: string;
   account: string;
@@ -30,9 +35,11 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false); // << MỚI
   const { language } = useLanguage();
   const { isAuthenticated, user, logout, isLoading: isAuthLoading } = useAuth();
   const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const toolsDropdownRef = useRef<HTMLDivElement>(null); // << MỚI
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
@@ -43,41 +50,32 @@ const Header: React.FC = () => {
 
   const closeAllPopups = useCallback(() => {
     setIsAccountDropdownOpen(false);
+    setIsToolsDropdownOpen(false); // << MỚI
     setIsMenuOpen(false);
-  }, []); // Các hàm setIs... là ổn định
+  }, []);
 
   const openSignInModal = useCallback(() => {
     closeAllPopups();
     setIsSignInModalOpen(true);
-  }, [closeAllPopups]); // Phụ thuộc vào closeAllPopups
+  }, [closeAllPopups]);
 
   const openSignUpModal = useCallback(() => {
     closeAllPopups();
     setIsSignUpModalOpen(true);
-  }, [closeAllPopups]); // Phụ thuộc vào closeAllPopups
+  }, [closeAllPopups]);
 
-  // useEffect để lắng nghe location.state và mở modal
   useEffect(() => {
-    // Ép kiểu an toàn cho location.state
     const locState = location.state as { openModal?: 'signIn' | 'signUp' } | null;
-
     if (locState?.openModal) {
       const modalToOpen = locState.openModal;
-      
-      // Xóa state ngay sau khi đọc để tránh mở lại modal không mong muốn
-      // Quan trọng: sử dụng location.pathname hiện tại (sau khi đã điều hướng về '/')
       navigate(location.pathname, { state: {}, replace: true });
-
       if (modalToOpen === 'signIn') {
-        // console.log("Header: Received openModal 'signIn' from state, opening modal.");
         openSignInModal();
       } else if (modalToOpen === 'signUp') {
-        // console.log("Header: Received openModal 'signUp' from state, opening modal.");
         openSignUpModal();
       }
     }
-  }, [location, navigate, openSignInModal, openSignUpModal]); // Thêm openSignInModal, openSignUpModal vào dependencies
-
+  }, [location, navigate, openSignInModal, openSignUpModal]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -90,59 +88,61 @@ const Header: React.FC = () => {
       if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
         setIsAccountDropdownOpen(false);
       }
+      // << MỚI: Xử lý click outside cho Tools dropdown
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target as Node)) {
+        setIsToolsDropdownOpen(false);
+      }
       const mobileMenuToggle = document.querySelector('button[aria-controls="mobile-menu"]');
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && mobileMenuToggle && !mobileMenuToggle.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
     };
-    if (isAccountDropdownOpen || isMenuOpen) {
+    if (isAccountDropdownOpen || isMenuOpen || isToolsDropdownOpen) { // << MỚI
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isAccountDropdownOpen, isMenuOpen]);
+  }, [isAccountDropdownOpen, isMenuOpen, isToolsDropdownOpen]); // << MỚI
 
   const toggleAccountDropdown = () => {
     if (isAuthLoading) return;
     setIsAccountDropdownOpen(!isAccountDropdownOpen);
+    setIsToolsDropdownOpen(false); // << MỚI: Đóng cái còn lại
+    setIsMenuOpen(false);
+  };
+
+  // << MỚI: Hàm toggle Tools dropdown
+  const toggleToolsDropdown = () => {
+    setIsToolsDropdownOpen(!isToolsDropdownOpen);
+    setIsAccountDropdownOpen(false); // << MỚI: Đóng cái còn lại
     setIsMenuOpen(false);
   };
 
   const toggleMobileMenu = () => {
     setIsMenuOpen(!isMenuOpen);
     setIsAccountDropdownOpen(false);
+    setIsToolsDropdownOpen(false); // << MỚI
   };
   
   const closeMobileMenuOnly = useCallback(() => {
     setIsMenuOpen(false);
   }, []);
 
-
   const closeSignInModal = () => setIsSignInModalOpen(false);
   const closeSignUpModal = () => setIsSignUpModalOpen(false);
-
-  const switchToSignUp = () => {
-    closeSignInModal();
-    openSignUpModal();
-  };
-
-  const switchToSignIn = () => {
-    closeSignUpModal();
-    openSignInModal();
-  };
-
-  const handleLogout = () => {
-    logout();
-    closeAllPopups();
-  };
+  const switchToSignUp = () => { closeSignInModal(); openSignUpModal(); };
+  const switchToSignIn = () => { closeSignUpModal(); openSignInModal(); };
+  const handleLogout = () => { logout(); closeAllPopups(); };
 
   const headerContent: AppContentType = {
-    en: { /* ... nội dung tiếng Anh ... */ 
+    en: { 
         home: 'Home', process: 'Process', blog: 'Blog', resources: 'Resources',
+        tools: 'Tools', timerBlock: 'Timer Block', fiCalculator: 'FI Calculator', tool3: 'Tool 3 (Soon)', tool4: 'Tool 4 (Soon)', // << MỚI
         signIn: 'Sign In', signUp: 'Sign Up', account: 'Account',
         dashboard: 'Dashboard', logout: 'Log Out'
     },
-    vi: { /* ... nội dung tiếng Việt ... */
+    vi: { 
         home: 'Trang chủ', process: 'Quy trình', blog: 'Bài viết', resources: 'Tài nguyên',
+        tools: 'Công cụ', timerBlock: 'Timer Block', fiCalculator: 'FI Calculator', tool3: 'Công cụ 3 (Sắp có)', tool4: 'Công cụ 4 (Sắp có)', // << MỚI
         signIn: 'Đăng nhập', signUp: 'Đăng ký', account: 'Tài khoản',
         dashboard: 'Bảng điều khiển', logout: 'Đăng xuất'
     }
@@ -153,11 +153,9 @@ const Header: React.FC = () => {
     <>
       <header
         className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-[95%] sm:w-11/12 md:w-10/12 max-w-6xl rounded-full backdrop-blur-xl ${
-          isScrolled || isMenuOpen || isAccountDropdownOpen ? 'bg-white/80 shadow-lg ring-1 ring-black ring-opacity-5' : 'bg-white/50'
+          isScrolled || isMenuOpen || isAccountDropdownOpen || isToolsDropdownOpen ? 'bg-white/80 shadow-lg ring-1 ring-black ring-opacity-5' : 'bg-white/50' // << MỚI
         }`}
       >
-        {/* PHẦN JSX CỦA NAV VÀ MOBILE MENU GIỮ NGUYÊN NHƯ CODE HEADER TRƯỚC ĐÓ BẠN ĐÃ CÓ */}
-        {/* Đảm bảo các nút Sign In/Sign Up gọi openSignInModal/openSignUpModal */}
         <div className="px-4 sm:px-6 py-2.5 sm:py-3">
           <nav className="flex items-center justify-between">
             <Link to="/" className="flex items-center flex-shrink-0" onClick={closeAllPopups}>
@@ -165,11 +163,43 @@ const Header: React.FC = () => {
               <span className="ml-2 text-lg font-bold bg-gradient-to-r from-[#6e00ff] to-[#ff007a] text-transparent bg-clip-text">marcusfi</span>
             </Link>
 
-            <div className="hidden md:flex items-center space-x-5 lg:space-x-6">
-              <Link to="/" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.home}</Link>
-              <Link to="/process" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.process}</Link>
-              <Link to="/blog" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.blog}</Link>
-              <Link to="/resources" onClick={closeAllPopups} className="text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium">{t.resources}</Link>
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1 lg:space-x-2"> {/* Giảm space-x một chút */}
+              <Link to="/" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.home}</Link>
+              <Link to="/process" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.process}</Link>
+              
+              {/* << MỚI: Tools Dropdown - Desktop */}
+              <div className="relative" ref={toolsDropdownRef}>
+                <button
+                  onClick={toggleToolsDropdown}
+                  className="flex items-center px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5"
+                  aria-expanded={isToolsDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  {t.tools}
+                  <ChevronDown size={16} className={`ml-1.5 transition-transform duration-200 ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isToolsDropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-56 origin-top-left bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <Link to="/timer-block" onClick={closeAllPopups} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#6e00ff] transition-colors">
+                      <Clock size={16} className="mr-2.5 text-purple-500" /> {t.timerBlock}
+                    </Link>
+                    <Link to="/fi-calculator" onClick={closeAllPopups} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#6e00ff] transition-colors">
+                      <DollarSign size={16} className="mr-2.5 text-green-500" /> {t.fiCalculator}
+                    </Link>
+                    <div className="border-t my-1.5 border-gray-100"></div> {/* Đường kẻ mờ hơn */}
+                    <span className="flex items-center px-4 py-2.5 text-sm text-gray-400 cursor-default opacity-75">
+                      <SettingsIcon size={16} className="mr-2.5" /> {t.tool3}
+                    </span>
+                     <span className="flex items-center px-4 py-2.5 text-sm text-gray-400 cursor-default opacity-75">
+                      <SettingsIcon size={16} className="mr-2.5" /> {t.tool4}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Link to="/blog" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.blog}</Link>
+              <Link to="/resources" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.resources}</Link>
             </div>
 
             <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
@@ -248,9 +278,27 @@ const Header: React.FC = () => {
 
           {isMenuOpen && (
             <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-md mt-3 rounded-2xl p-4 shadow-2xl ring-1 ring-black ring-opacity-5">
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-1"> {/* Giảm space y */}
                 <Link to="/" onClick={closeMobileMenuOnly} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.home}</Link>
                 <Link to="/process" onClick={closeMobileMenuOnly} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.process}</Link>
+                
+                {/* << MỚI: Tools Links - Mobile */}
+                <div className="border-t border-gray-200/60 my-2 pt-1"></div>
+                 <span className="px-3 pt-1 pb-1 text-xs font-semibold text-purple-700 uppercase tracking-wider">{t.tools}</span>
+                 <Link to="/timer-block" onClick={closeMobileMenuOnly} className="flex items-center px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">
+                    <Clock size={16} className="mr-3 text-purple-500" /> {t.timerBlock}
+                 </Link>
+                 <Link to="/fi-calculator" onClick={closeMobileMenuOnly} className="flex items-center px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">
+                    <DollarSign size={16} className="mr-3 text-green-500" /> {t.fiCalculator}
+                 </Link>
+                 <span className="flex items-center px-3 py-2.5 text-gray-500 text-sm font-medium rounded-lg cursor-default opacity-80">
+                    <SettingsIcon size={16} className="mr-3" /> {t.tool3}
+                 </span>
+                 <span className="flex items-center px-3 py-2.5 text-gray-500 text-sm font-medium rounded-lg cursor-default opacity-80">
+                    <SettingsIcon size={16} className="mr-3" /> {t.tool4}
+                 </span>
+                <div className="border-t border-gray-200/60 mt-2 pt-1"></div>
+
                 <Link to="/blog" onClick={closeMobileMenuOnly} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.blog}</Link>
                 <Link to="/resources" onClick={closeMobileMenuOnly} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.resources}</Link>
 

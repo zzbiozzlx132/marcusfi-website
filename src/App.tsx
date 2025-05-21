@@ -1,6 +1,7 @@
 // src/App.tsx
 import React, { Suspense, lazy, useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link as RouterLink } from 'react-router-dom';
+// THÊM useLocation từ react-router-dom
+import { BrowserRouter, Routes, Route, Link as RouterLink, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -9,7 +10,7 @@ import WelcomeModal from './components/WelcomeModal';
 import MainLayout from './components/MainLayout';
 import ScrollToTop from './components/ScrollToTop';
 
-// Page Components
+// Page Components (giữ nguyên)
 const Hero = lazy(() => import('./components/Hero'));
 const Problem = lazy(() => import('./components/Problem'));
 const LeadMagnet = lazy(() => import('./components/LeadMagnet'));
@@ -25,6 +26,10 @@ const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+
+const TimerBlockPage = lazy(() => import('./pages/TimerBlockPage'));
+const FICalculatorPage = lazy(() => import('./pages/FICalculatorPage'));
+
 
 const myMusicTracks = [
   { id: 'local_track1', title: 'Nhạc Nền 1', src: '/marcusfi-website/music1.mp3' },
@@ -46,26 +51,87 @@ export const LoadingSpinner: React.FC = () => (
   </div>
 );
 
+// << BẮT ĐẦU THAY ĐỔI: Tạo component con để chứa Routes và MusicPlayer >>
+// Component này sẽ được render bên trong BrowserRouter, nên có thể dùng useLocation
+const AppRoutesAndPlayer: React.FC<{
+  showWelcomeModal: boolean;
+  userHasInteracted: boolean;
+}> = ({ showWelcomeModal, userHasInteracted }) => {
+  const location = useLocation();
+  const hideMusicPlayerOnRoutes = ['/timer-block']; // Các đường dẫn cần ẩn MusicPlayer
+  const shouldShowMusicPlayer = !hideMusicPlayerOnRoutes.includes(location.pathname);
+
+  return (
+    <>
+      <div className={showWelcomeModal ? 'opacity-30 pointer-events-none transition-opacity duration-500' : 'opacity-100 transition-opacity duration-500'}>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={
+                <>
+                  <Hero />
+                  <Problem />
+                  <LeadMagnet />
+                  <Testimonials />
+                  <BlogPreview />
+                </>
+              } />
+              <Route path="/blog" element={<BlogListPage />} />
+              <Route path="/blog/:slug" element={<SinglePostPage />} />
+              <Route path="/resources" element={<ResourcesPage />} />
+              <Route path="/contact" element={<ContactUsPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            </Route>
+
+            <Route path="/process" element={<ProcessPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            
+            <Route path="/timer-block" element={<TimerBlockPage />} />
+            <Route path="/fi-calculator" element={<FICalculatorPage />} />
+            
+            <Route path="*" element={
+                <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center items-center p-4">
+                  <div className="text-center flex-grow flex flex-col justify-center items-center">
+                      <h1 className="text-5xl sm:text-7xl font-display text-purple-500 mb-4 animate-pulse-glow">404</h1>
+                      <p className="text-xl sm:text-2xl text-gray-300 mb-8 text-center">Oops! Trang bạn đang tìm kiếm dường như đã lạc vào vũ trụ MarcusFI rồi.</p>
+                      <RouterLink
+                        to="/"
+                        className="inline-flex items-center group px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-white shadow-lg hover:shadow-purple-500/50"
+                      >
+                        Quay Về Cổng Chính
+                      </RouterLink>
+                  </div>
+                </div>
+            } />
+          </Routes>
+        </Suspense>
+      </div>
+      
+      {/* MusicPlayer chỉ render nếu shouldShowMusicPlayer là true */}
+      {shouldShowMusicPlayer && myMusicTracks.length > 0 && (
+        <MusicPlayer 
+          tracks={myMusicTracks} 
+          triggerPlayAfterInteraction={userHasInteracted} 
+        />
+      )}
+    </>
+  );
+};
+// << KẾT THÚC THAY ĐỔI: Tạo component con >>
+
 function App() {
-  // showWelcomeModal sẽ luôn là true khi component App được mount (tức là mỗi khi F5)
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
 
   const handleBeginJourney = () => {
     setShowWelcomeModal(false);
     setUserHasInteracted(true);
-    // XÓA DÒNG SAU ĐỂ KHÔNG LƯU VÀO LOCALSTORAGE NỮA
-    // localStorage.setItem('userWelcomed', 'true');
   };
 
-  // XÓA HOẶC COMMENT LẠI KHỐI useEffect NÀY
-  // useEffect(() => {
-  //   const welcomed = localStorage.getItem('userWelcomed');
-  //   if (welcomed === 'true') {
-  //     setShowWelcomeModal(false);
-  //     setUserHasInteracted(true);
-  //   }
-  // }, []);
+  // Logic WelcomeModal mỗi lần F5 (đã đúng, không thay đổi)
 
   return (
     <LanguageProvider>
@@ -75,57 +141,12 @@ function App() {
           
           {showWelcomeModal && <WelcomeModal onBegin={handleBeginJourney} />}
 
-          <div className={showWelcomeModal ? 'opacity-30 pointer-events-none transition-opacity duration-500' : 'opacity-100 transition-opacity duration-500'}>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route element={<MainLayout />}>
-                  <Route path="/" element={
-                    <>
-                      <Hero />
-                      <Problem />
-                      <LeadMagnet />
-                      <Testimonials />
-                      <BlogPreview />
-                    </>
-                  } />
-                  <Route path="/blog" element={<BlogListPage />} />
-                  <Route path="/blog/:slug" element={<SinglePostPage />} />
-                  <Route path="/resources" element={<ResourcesPage />} />
-                  <Route path="/contact" element={<ContactUsPage />} />
-                  <Route path="/faq" element={<FAQPage />} />
-                  <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                </Route>
-
-                <Route path="/process" element={<ProcessPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                
-                <Route path="*" element={
-                    <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center items-center p-4">
-                      <div className="text-center flex-grow flex flex-col justify-center items-center">
-                          <h1 className="text-5xl sm:text-7xl font-display text-purple-500 mb-4 animate-pulse-glow">404</h1>
-                          <p className="text-xl sm:text-2xl text-gray-300 mb-8 text-center">Oops! Trang bạn đang tìm kiếm dường như đã lạc vào vũ trụ MarcusFI rồi.</p>
-                          <RouterLink
-                            to="/"
-                            className="inline-flex items-center group px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors text-white shadow-lg hover:shadow-purple-500/50"
-                          >
-                            Quay Về Cổng Chính
-                          </RouterLink>
-                      </div>
-                    </div>
-                } />
-              </Routes>
-            </Suspense>
-          </div>
+          {/* << THAY ĐỔI: Sử dụng component con AppRoutesAndPlayer >> */}
+          <AppRoutesAndPlayer 
+            showWelcomeModal={showWelcomeModal} 
+            userHasInteracted={userHasInteracted} 
+          />
           
-          {myMusicTracks.length > 0 && (
-            <MusicPlayer 
-              tracks={myMusicTracks} 
-              triggerPlayAfterInteraction={userHasInteracted} 
-            />
-          )}
-
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
