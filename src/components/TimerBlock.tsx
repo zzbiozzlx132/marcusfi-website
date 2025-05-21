@@ -1,6 +1,6 @@
 // src/components/TimerBlock.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, BellRing, ChevronDown, X as XIcon, Trash2, Volume2 } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, BellRing, ChevronDown, X as XIcon, Trash2, Volume2, Save, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Task {
@@ -23,9 +23,6 @@ interface TimerSettings {
   currentMusicTrackIndex: number;
 }
 
-// --- DANH SÁCH ÂM THANH THÔNG BÁO ---
-// QUAN TRỌNG: Nếu file âm báo của bạn nằm trong /public/marcusfi-website/sound/
-// hãy cập nhật các đường dẫn url dưới đây, ví dụ: "/marcusfi-website/sound/ntf-snd-01.mp3"
 const NOTIFICATION_SOUNDS = [
   { name: "Thông báo 1", url: "/marcusfi-website/sound/ntf-snd-01.mp3" },
   { name: "Thông báo 2", url: "/marcusfi-website/sound/ntf-snd-02.mp3" },
@@ -35,7 +32,6 @@ const NOTIFICATION_SOUNDS = [
   { name: "Thông báo 6", url: "/marcusfi-website/sound/ntf-snd-06.mp3" },
 ];
 
-// --- DANH SÁCH NHẠC NỀN (CẬP NHẬT THEO MẪU CHO GITHUB PAGES) ---
 const BACKGROUND_MUSIC_TRACKS = [
   { id: 'local_track1', title: 'Nhạc Nền 1', src: '/marcusfi-website/music1.mp3' },
   { id: 'local_track2', title: 'Nhạc Nền 2', src: '/marcusfi-website/music2.mp3' },
@@ -49,14 +45,13 @@ const BACKGROUND_MUSIC_TRACKS = [
   { id: 'local_track10', title: 'Nhạc Nền 10', src: '/marcusfi-website/music10.mp3' },
 ];
 
-
 const DEFAULT_SETTINGS: TimerSettings = {
   workDuration: 25,
   shortBreakDuration: 5,
   longBreakDuration: 15,
   cyclesBeforeLongBreak: 4,
   includeMusic: false,
-  alarmSoundRepeat: 2,
+  alarmSoundRepeat: 1,
   darkModeOnStart: true,
   selectedNotificationSound: NOTIFICATION_SOUNDS[0].url,
   currentMusicTrackIndex: 0,
@@ -74,11 +69,11 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentSettings: initialSettings, onSaveSettings }) => {
-  const [settings, setSettings] = useState<TimerSettings>(initialSettings);
+  const [settingsData, setSettingsData] = useState<TimerSettings>(initialSettings);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    setSettings(initialSettings);
+    setSettingsData(initialSettings);
   }, [initialSettings]);
 
   const handleChange = (field: keyof TimerSettings, value: string | number | boolean) => {
@@ -91,11 +86,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     else if (field !== 'includeMusic' && field !== 'darkModeOnStart' && field !== 'selectedNotificationSound' && field !== 'currentMusicTrackIndex' && typeof numericValue === 'number') {
       numericValue = Math.max(1, Number(numericValue));
     }
-    setSettings(prev => ({ ...prev, [field]: numericValue as any }));
+    setSettingsData(prev => ({ ...prev, [field]: numericValue as any }));
   };
 
   const handleSave = () => {
-    onSaveSettings(settings);
+    onSaveSettings(settingsData);
     onClose();
   };
 
@@ -103,8 +98,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     if (!previewAudioRef.current) {
       previewAudioRef.current = new Audio();
     }
-    // Tạo URL tuyệt đối để đảm bảo file được tìm thấy, đặc biệt nếu selectedNotificationSound là đường dẫn tương đối
-    const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
+    const soundUrl = new URL(settingsData.selectedNotificationSound, window.location.origin).href;
     previewAudioRef.current.src = soundUrl;
     previewAudioRef.current.play().catch(e => console.error("Lỗi nghe thử âm báo:", e));
   };
@@ -119,58 +113,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white p-5 sm:p-6 rounded-xl shadow-2xl w-full max-w-md"
+        className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-xl shadow-2xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-800">Cài đặt Timer</h3>
-          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Cài đặt Timer</h3>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <XIcon size={20} />
           </button>
         </div>
-
         <div className="space-y-3">
             <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Tập trung (phút)</label>
-                    <input type="number" min="1" value={settings.workDuration}
-                    onChange={(e) => handleChange('workDuration', e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Nghỉ ngắn (phút)</label>
-                    <input type="number" min="1" value={settings.shortBreakDuration}
-                    onChange={(e) => handleChange('shortBreakDuration', e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Nghỉ dài (phút)</label>
-                    <input type="number" min="1" value={settings.longBreakDuration}
-                    onChange={(e) => handleChange('longBreakDuration', e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Chu kỳ / Nghỉ dài</label>
-                    <input type="number" min="1" value={settings.cyclesBeforeLongBreak}
-                    onChange={(e) => handleChange('cyclesBeforeLongBreak', e.target.value)}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-                </div>
+                {[
+                    {label: 'Tập trung (phút)', field: 'workDuration', value: settingsData.workDuration},
+                    {label: 'Nghỉ ngắn (phút)', field: 'shortBreakDuration', value: settingsData.shortBreakDuration},
+                    {label: 'Nghỉ dài (phút)', field: 'longBreakDuration', value: settingsData.longBreakDuration},
+                    {label: 'Chu kỳ / Nghỉ dài', field: 'cyclesBeforeLongBreak', value: settingsData.cyclesBeforeLongBreak},
+                ].map(item => (
+                    <div key={item.field}>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{item.label}</label>
+                        <input type="number" min="1" value={item.value}
+                        onChange={(e) => handleChange(item.field as keyof TimerSettings, e.target.value)}
+                        className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
+                    </div>
+                ))}
             </div>
              <div>
-                <label htmlFor="alarmRepeat" className="block text-xs font-medium text-gray-600 mb-1">Số lần lặp âm báo (1-5)</label>
-                <input type="number" id="alarmRepeat" min="1" max="5" value={settings.alarmSoundRepeat}
+                <label htmlFor="alarmRepeat" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Số lần lặp âm báo (1-5)</label>
+                <input type="number" id="alarmRepeat" min="1" max="5" value={settingsData.alarmSoundRepeat}
                   onChange={(e) => handleChange('alarmSoundRepeat', e.target.value)}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
+                  className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
             </div>
-
             <div>
-              <label htmlFor="notificationSound" className="block text-xs font-medium text-gray-600 mb-1">Âm thanh thông báo</label>
+              <label htmlFor="notificationSound" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Âm thanh thông báo</label>
               <div className="flex items-center space-x-2">
                 <select
                   id="notificationSound"
-                  value={settings.selectedNotificationSound}
+                  value={settingsData.selectedNotificationSound}
                   onChange={(e) => handleChange('selectedNotificationSound', e.target.value)}
-                  className="flex-grow px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"
+                  className="flex-grow px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                 >
                   {NOTIFICATION_SOUNDS.map(sound => (
                     <option key={sound.url} value={sound.url}>{sound.name}</option>
@@ -179,31 +160,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
                 <button
                   onClick={handlePreviewSound}
                   title="Nghe thử"
-                  className="p-2 border border-gray-300 rounded-md hover:bg-gray-100 text-gray-600 transition-colors"
+                  className="p-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
                 >
                   <Volume2 size={18} />
                 </button>
               </div>
             </div>
-
             <div className="flex items-center justify-between pt-2 space-x-4">
                 <div className="flex items-center">
-                    <input type="checkbox" id="modalIncludeMusic" checked={settings.includeMusic}
+                    <input type="checkbox" id="modalIncludeMusic" checked={settingsData.includeMusic}
                     onChange={(e) => handleChange('includeMusic', e.target.checked)}
-                    className="h-4 w-4 text-[#6e00ff] focus:ring-offset-0 focus:ring-1 focus:ring-[#6e00ff] border-gray-300 rounded"/>
-                    <label htmlFor="modalIncludeMusic" className="ml-2 block text-sm text-gray-700">Nhạc nền (Work mode)</label>
+                    className="h-4 w-4 text-purple-600 focus:ring-offset-0 focus:ring-1 focus:ring-purple-500 border-gray-300 dark:border-gray-600 rounded"/>
+                    <label htmlFor="modalIncludeMusic" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">Nhạc nền (Work mode)</label>
                 </div>
                 <div className="flex items-center">
-                    <input type="checkbox" id="modalDarkModeOnStart" checked={settings.darkModeOnStart}
+                    <input type="checkbox" id="modalDarkModeOnStart" checked={settingsData.darkModeOnStart}
                     onChange={(e) => handleChange('darkModeOnStart', e.target.checked)}
-                    className="h-4 w-4 text-[#6e00ff] focus:ring-offset-0 focus:ring-1 focus:ring-[#6e00ff] border-gray-300 rounded"/>
-                    <label htmlFor="modalDarkModeOnStart" className="ml-2 block text-sm text-gray-700">Dark Mode khi Start</label>
+                    className="h-4 w-4 text-purple-600 focus:ring-offset-0 focus:ring-1 focus:ring-purple-500 border-gray-300 dark:border-gray-600 rounded"/>
+                    <label htmlFor="modalDarkModeOnStart" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">Dark Mode khi Start (Work)</label> {/* Sửa label */}
                 </div>
             </div>
         </div>
         <button
             onClick={handleSave}
-            className="w-full mt-5 py-2.5 px-4 bg-[#6e00ff] text-white font-semibold rounded-lg hover:bg-[#5500cc] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6e00ff]"
+            className="w-full mt-5 py-2.5 px-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
         >
             Lưu Cài Đặt
         </button>
@@ -230,12 +210,12 @@ const ConfirmTaskActionModal: React.FC<ConfirmTaskActionModalProps> = ({ isOpen,
         >
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white p-5 sm:p-6 rounded-lg shadow-xl w-full max-w-xs text-center"
+                className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-lg shadow-xl w-full max-w-xs text-center"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Hoàn Thành Công Việc!</h3>
-                <p className="text-sm text-gray-600 mb-5">
-                    Tuyệt vời! Bạn đã hoàn thành: <span className="font-medium text-purple-600">"{taskName}"</span>.
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Hoàn Thành Công Việc!</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-5">
+                    Tuyệt vời! Bạn đã hoàn thành: <span className="font-medium text-purple-600 dark:text-purple-400">"{taskName}"</span>.
                     <br/>Chọn hành động tiếp theo:
                 </p>
                 <div className="space-y-2.5">
@@ -251,7 +231,7 @@ const ConfirmTaskActionModal: React.FC<ConfirmTaskActionModalProps> = ({ isOpen,
                     >
                         <Trash2 size={16} className="mr-2"/> Xoá khỏi danh sách
                     </button>
-                    <button onClick={onCancel} className="w-full mt-1 py-1 text-xs text-gray-500 hover:text-gray-700">Để sau</button>
+                    <button onClick={onCancel} className="w-full mt-1 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Để sau</button>
                 </div>
             </motion.div>
         </motion.div>
@@ -270,6 +250,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
           ...parsed,
           selectedNotificationSound: parsed.selectedNotificationSound && NOTIFICATION_SOUNDS.some(s => s.url === parsed.selectedNotificationSound) ? parsed.selectedNotificationSound : DEFAULT_SETTINGS.selectedNotificationSound,
           currentMusicTrackIndex: typeof parsed.currentMusicTrackIndex === 'number' && parsed.currentMusicTrackIndex >=0 && parsed.currentMusicTrackIndex < BACKGROUND_MUSIC_TRACKS.length ? parsed.currentMusicTrackIndex : DEFAULT_SETTINGS.currentMusicTrackIndex,
+          alarmSoundRepeat: typeof parsed.alarmSoundRepeat === 'number' ? Math.max(1, Math.min(5, parsed.alarmSoundRepeat)) : DEFAULT_SETTINGS.alarmSoundRepeat,
         };
         return validatedSettings;
       }
@@ -284,6 +265,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   const [currentMode, setCurrentMode] = useState<'work' | 'short_break' | 'long_break'>('work');
   const [cycleCount, setCycleCount] = useState(0);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTaskForm, setShowTaskForm] = useState(false); 
 
   const [tasks, setTasks] = useState<Task[]>(() => {
     const savedTasks = localStorage.getItem('timerTasks_v2');
@@ -315,10 +297,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
           );
           return mappedTasks;
         }
-      } catch (error) {
-        console.error("Lỗi khi parse tasks từ localStorage:", error);
-        return [];
-      }
+      } catch (error) { console.error("Lỗi khi parse tasks từ localStorage:", error); return []; }
     }
     return [];
   });
@@ -332,10 +311,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         try {
             const activeId = JSON.parse(savedActiveTask);
             return typeof activeId === 'string' ? activeId : null;
-        } catch (error) {
-            console.error("Lỗi parse activeTaskId từ localStorage:", error, "Giá trị:", savedActiveTask);
-            return null;
-        }
+        } catch (error) { console.error("Lỗi parse activeTaskId:", error); return null; }
     }
     return null;
   });
@@ -343,12 +319,9 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   useEffect(() => {
     if (activeTaskId) {
         const taskExists = tasks.some(task => task.id === activeTaskId && task.status === 'in_progress');
-        if (!taskExists) {
-            setActiveTaskId(null);
-        }
+        if (!taskExists) setActiveTaskId(null);
     }
   }, [tasks, activeTaskId]);
-
 
   const [isInFocusMode, setIsInFocusMode] = useState(false);
   const [showControlsInFocus, setShowControlsInFocus] = useState(false);
@@ -358,34 +331,30 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   const backgroundMusicAudioRef = useRef<HTMLAudioElement | null>(null);
   const notificationSoundAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number>();
-  const alarmPlayedCountRef = useRef(0);
+  const alarmPlayedCountRef = useRef(0); 
 
   useEffect(() => {
     localStorage.setItem('timerSettings_v2', JSON.stringify(settings));
-    if (!isRunning) {
-        let newTimeLeftBasedOnMode = settings.workDuration * 60;
-        if (currentMode === 'short_break') newTimeLeftBasedOnMode = settings.shortBreakDuration * 60;
-        else if (currentMode === 'long_break') newTimeLeftBasedOnMode = settings.longBreakDuration * 60;
-        if (timeLeft !== newTimeLeftBasedOnMode) {
-             setTimeLeft(newTimeLeftBasedOnMode);
-        }
-    }
-  }, [settings, currentMode, isRunning, timeLeft]);
+  }, [settings]);
 
   useEffect(() => {
-    localStorage.setItem('timerTasks_v2', JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    if (activeTaskId === null) {
-        localStorage.removeItem('timerActiveTaskId');
-    } else {
-        localStorage.setItem('timerActiveTaskId', JSON.stringify(activeTaskId));
+    if (!isRunning) { 
+      let newFullDuration;
+      if (currentMode === 'work') newFullDuration = settings.workDuration * 60;
+      else if (currentMode === 'short_break') newFullDuration = settings.shortBreakDuration * 60;
+      else newFullDuration = settings.longBreakDuration * 60;
+      setTimeLeft(newFullDuration);
     }
+  }, [currentMode, settings.workDuration, settings.shortBreakDuration, settings.longBreakDuration, settings.cyclesBeforeLongBreak]);
+
+  useEffect(() => { localStorage.setItem('timerTasks_v2', JSON.stringify(tasks)); }, [tasks]);
+  useEffect(() => {
+    activeTaskId === null ? localStorage.removeItem('timerActiveTaskId') : localStorage.setItem('timerActiveTaskId', JSON.stringify(activeTaskId));
   }, [activeTaskId]);
 
+  // --- CẬP NHẬT useEffect CHO FOCUS MODE ---
   useEffect(() => {
-    const newFocusModeState = isRunning && settings.darkModeOnStart;
+    const newFocusModeState = isRunning && settings.darkModeOnStart && currentMode === 'work';
     if (newFocusModeState !== isInFocusMode) {
       setIsInFocusMode(newFocusModeState);
       setIsPageInFocusMode(newFocusModeState);
@@ -393,52 +362,43 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
           setShowControlsInFocus(false);
       }
     }
-  }, [isRunning, settings.darkModeOnStart, setIsPageInFocusMode, isInFocusMode]);
+  }, [isRunning, settings.darkModeOnStart, currentMode, setIsPageInFocusMode, isInFocusMode]);
+  // --- KẾT THÚC CẬP NHẬT ---
+
 
   const playNotificationSound = useCallback(() => {
-    if (!notificationSoundAudioRef.current) return;
-
+    if (!notificationSoundAudioRef.current || settings.alarmSoundRepeat <= 0) return;
+    const audio = notificationSoundAudioRef.current;
     const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
-    if (notificationSoundAudioRef.current.src !== soundUrl) {
-      notificationSoundAudioRef.current.src = soundUrl;
-    }
-    
-    alarmPlayedCountRef.current = 0;
-    const currentNotificationRef = notificationSoundAudioRef.current;
-    
-    const playAlarm = () => {
-      if (currentNotificationRef && alarmPlayedCountRef.current < settings.alarmSoundRepeat) {
-        currentNotificationRef.currentTime = 0;
-        currentNotificationRef.play().then(() => {
-          alarmPlayedCountRef.current++;
-        }).catch(e => console.error("Lỗi phát âm báo:", e));
-      }
-    };
-
-    const onAlarmEnded = () => {
+    if (audio.src !== soundUrl) audio.src = soundUrl;
+    alarmPlayedCountRef.current = 0; 
+    const playCurrentSequence = () => {
       if (alarmPlayedCountRef.current < settings.alarmSoundRepeat) {
-        playAlarm();
+        audio.currentTime = 0;
+        audio.play().catch(e => {
+          console.error("Lỗi phát âm báo:", e);
+          audio.removeEventListener('ended', onEndedHandler); 
+        });
       } else {
-        currentNotificationRef?.removeEventListener('ended', onAlarmEnded);
+        audio.removeEventListener('ended', onEndedHandler); 
       }
     };
-
-    currentNotificationRef.removeEventListener('ended', onAlarmEnded);
-    currentNotificationRef.addEventListener('ended', onAlarmEnded);
-    playAlarm();
+    const onEndedHandler = () => {
+      alarmPlayedCountRef.current++; 
+      playCurrentSequence(); 
+    };
+    audio.removeEventListener('ended', onEndedHandler); 
+    audio.addEventListener('ended', onEndedHandler);
+    playCurrentSequence(); 
   }, [settings.selectedNotificationSound, settings.alarmSoundRepeat]);
-
 
   const handleCycleComplete = useCallback(() => {
     playNotificationSound();
     if(backgroundMusicAudioRef.current && !backgroundMusicAudioRef.current.paused) {
         backgroundMusicAudioRef.current.pause();
     }
-
     let nextMode: 'work' | 'short_break' | 'long_break';
-    let nextTimeLeft: number;
     let newCycleCountForState = cycleCount;
-
     if (currentMode === 'work') {
       if (activeTaskId) {
         setTasks((prevTasks): Task[] => prevTasks.map((task) =>
@@ -449,9 +409,9 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
       }
       newCycleCountForState = cycleCount + 1;
       if (newCycleCountForState >= settings.cyclesBeforeLongBreak) {
-        nextMode = 'long_break'; nextTimeLeft = settings.longBreakDuration * 60; setCycleCount(0);
+        nextMode = 'long_break'; setCycleCount(0);
       } else {
-        nextMode = 'short_break'; nextTimeLeft = settings.shortBreakDuration * 60; setCycleCount(newCycleCountForState);
+        nextMode = 'short_break'; setCycleCount(newCycleCountForState);
       }
       if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
         new Notification('Đến giờ giải lao rồi!', { body: `Hãy đứng dậy, di chuyển hoặc thư giãn một chút nhé. ${nextMode === 'short_break' ? 'Nghỉ ngắn' : 'Nghỉ dài'} sắp bắt đầu.`, icon: '/marcusfi-website/favicon.ico'});
@@ -459,17 +419,20 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         Notification.requestPermission().then(permission => { if (permission === "granted") { new Notification('Đến giờ giải lao rồi!', { body: `Hãy đứng dậy, di chuyển hoặc thư giãn một chút nhé. ${nextMode === 'short_break' ? 'Nghỉ ngắn' : 'Nghỉ dài'} sắp bắt đầu.`, icon: '/marcusfi-website/favicon.ico'});}});
       }
     } else {
-      nextMode = 'work'; nextTimeLeft = settings.workDuration * 60;
+      nextMode = 'work';
     }
-    setCurrentMode(nextMode); setTimeLeft(nextTimeLeft); setIsRunning(false);
-  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]); // Added setTasks
+    setIsRunning(false); 
+    setCurrentMode(nextMode); 
+  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       timerRef.current = window.setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            clearInterval(timerRef.current as number); handleCycleComplete(); return 0;
+            clearInterval(timerRef.current as number); 
+            handleCycleComplete(); 
+            return 0; 
           }
           return prev - 1;
         });
@@ -483,30 +446,24 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   useEffect(() => {
     const audio = backgroundMusicAudioRef.current;
     if (!audio) return;
-
     const handleMusicEnded = () => {
       const nextTrackIndex = (settings.currentMusicTrackIndex + 1) % BACKGROUND_MUSIC_TRACKS.length;
       setSettings(prev => ({ ...prev, currentMusicTrackIndex: nextTrackIndex }));
     };
-
     audio.removeEventListener('ended', handleMusicEnded);
     audio.addEventListener('ended', handleMusicEnded);
-
     if (settings.includeMusic && currentMode === 'work') {
       const currentTrackObject = BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex];
       if (!currentTrackObject) {
-          console.error("Không tìm thấy track nhạc nền với index:", settings.currentMusicTrackIndex);
-          if (!audio.paused) audio.pause();
-          return;
+        if (!audio.paused) audio.pause();
+        return;
       }
       const newSrc = currentTrackObject.src;
       const absoluteNewSrc = (new URL(newSrc, window.location.origin)).href;
-
       if (audio.src !== absoluteNewSrc) {
         audio.src = newSrc; 
         audio.load();
       }
-      
       if (isRunning && audio.paused) {
         audio.play().catch(e => console.error("Lỗi phát nhạc nền:", e));
       } else if (!isRunning && !audio.paused) {
@@ -520,8 +477,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     return () => {
       audio.removeEventListener('ended', handleMusicEnded);
     };
-  }, [isRunning, currentMode, settings.includeMusic, settings.currentMusicTrackIndex, setSettings]);
-
+  }, [isRunning, currentMode, settings, setSettings]);
 
   const handleStart = () => {
     if (currentMode === 'work' && !activeTaskId) {
@@ -536,18 +492,21 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     }
     setIsRunning(true);
   };
-  const handlePause = () => setIsRunning(false);
-  const handleReset = () => {
+  const handlePause = () => {
     setIsRunning(false);
-    let newTime;
+  };
+  const handleReset = () => {
+    setIsRunning(false); 
+    let newTime; 
     if (currentMode === 'work') newTime = settings.workDuration * 60;
     else if (currentMode === 'short_break') newTime = settings.shortBreakDuration * 60;
     else newTime = settings.longBreakDuration * 60;
-    setTimeLeft(newTime);
+    setTimeLeft(newTime); 
   };
   const handleSkipBreak = () => {
     if (currentMode !== 'work') {
-      setCurrentMode('work'); setTimeLeft(settings.workDuration * 60); setIsRunning(false);
+      setIsRunning(false); 
+      setCurrentMode('work'); 
     }
   };
 
@@ -559,6 +518,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
       };
       setTasks((prev): Task[] => [...prev, newTask].sort(taskSortLogic));
       setNewTaskName(''); setNewTaskEstimatedCycles(1);
+      setShowTaskForm(false); 
     }
   };
 
@@ -640,7 +600,10 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   return (
     <div
       className={`max-w-xl mx-auto p-4 sm:p-6 rounded-2xl shadow-xl transition-all duration-300 ease-in-out relative
-                 ${isInFocusMode ? 'bg-black min-h-[380px] sm:min-h-[420px] flex flex-col justify-center items-center' : 'bg-white'}`}
+             ${isInFocusMode 
+               ? 'bg-black min-h-[380px] sm:min-h-[420px] flex flex-col justify-center items-center' 
+               : 'bg-gray-50 dark:bg-gray-800'
+             }`}
       onMouseEnter={() => { if (isInFocusMode) setShowControlsInFocus(true); }}
       onMouseLeave={() => { if (isInFocusMode) setShowControlsInFocus(false); }}
     >
@@ -652,7 +615,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
                  >
                     <button
                         onClick={() => setShowSettingsModal(true)}
-                        className="inline-flex items-center text-sm text-gray-500 hover:text-[#6e00ff] transition-colors py-1.5 px-2.5 rounded-md hover:bg-gray-100 border border-transparent hover:border-gray-200"
+                        className="inline-flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors py-1.5 px-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
                     >
                         <SettingsIcon size={15} className="mr-1.5" />
                         Cài đặt Timer
@@ -671,25 +634,25 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
                 transition={{ duration: 0.25 }}
                 className={`text-3xl sm:text-4xl font-bold mb-2
                             ${isInFocusMode ? 'h-0 overflow-hidden pointer-events-none' :
-                                             (currentMode === 'work' ? 'text-gray-800' :
-                                              currentMode === 'short_break' ? 'text-green-600' : 'text-blue-600')}`}
+                                             (currentMode === 'work' ? 'text-gray-800 dark:text-gray-100' :
+                                              currentMode === 'short_break' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400')}`}
             >
             {currentMode === 'work' ? 'Thời Gian Tập Trung' : currentMode === 'short_break' ? 'Nghỉ Ngắn' : 'Nghỉ Dài'}
             </motion.h2>
         </AnimatePresence>
 
-        <div className={`text-6xl font-mono font-bold mb-4 ${isInFocusMode ? 'text-white text-7xl sm:text-8xl' : 'text-[#6e00ff]'}`}>
+        <div className={`text-6xl font-mono font-bold mb-4 ${isInFocusMode ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`}>
           {formatTime(timeLeft)}
         </div>
         <div
           className={`flex justify-center space-x-3 sm:space-x-4 mb-6 transition-opacity duration-300
-                     ${isInFocusMode && !showControlsInFocus ? 'opacity-0' : 'opacity-100'}`}
+                     ${isInFocusMode && !showControlsInFocus ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         >
           <button
             onClick={isRunning ? handlePause : handleStart}
             disabled={!isRunning && currentMode === 'work' && !activeTaskId}
             className={`p-3 rounded-full text-white transition-all duration-200 ease-in-out transform hover:scale-105
-                       ${isRunning ? 'bg-red-500 hover:bg-red-600 shadow-md' : 'bg-[#6e00ff] hover:bg-[#5500cc] shadow-md'}
+                       ${isRunning ? 'bg-red-500 hover:bg-red-600 shadow-md' : 'bg-purple-600 hover:bg-purple-700 shadow-md'}
                        ${!isRunning && currentMode === 'work' && !activeTaskId ? 'opacity-50 cursor-not-allowed' : ''}
                        ${isInFocusMode ? (isRunning ? 'bg-red-500/70 hover:bg-red-600/90' : 'bg-purple-600/70 hover:bg-purple-500/90') : ''}
                       `}
@@ -699,7 +662,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
           </button>
           <button onClick={handleReset}
             className={`p-3 rounded-full transition-colors transform hover:scale-105 shadow-sm
-                       ${isInFocusMode ? 'bg-gray-600/60 hover:bg-gray-500/80 text-gray-200' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}
+                       ${isInFocusMode ? 'bg-gray-600/60 hover:bg-gray-500/80 text-gray-200' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'}
                       `}>
             <RotateCcw size={24} />
           </button>
@@ -720,47 +683,80 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
             {activeTaskDetails.name}
           </p>
           <p className="text-xs sm:text-sm text-gray-400 mt-2">
-              Dự kiến: {calculateEstimatedCompletionDateTime(activeTaskDetails)}
+              {activeTaskDetails.cyclesCompleted} / {activeTaskDetails.estimatedCycles} sessions - Dự kiến: {calculateEstimatedCompletionDateTime(activeTaskDetails)}
           </p>
         </div>
       )}
 
-      <div className={`border-t border-gray-200 pt-6 mt-4 transition-opacity duration-300 ${isInFocusMode || showSettingsModal ? 'opacity-10 pointer-events-none h-0 overflow-hidden' : 'opacity-100'}`}>
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">Công việc của bạn</h3>
-        <div className="flex gap-2 mb-4 items-end">
-          <div className="flex-1">
-            <label htmlFor="newTaskName" className="block text-xs font-medium text-gray-600 mb-0.5">Tên công việc</label>
-            <input type="text" id="newTaskName" value={newTaskName}
-              onChange={(e) => setNewTaskName(e.target.value)}
-              placeholder="Thêm công việc mới..."
-              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-          </div>
-          <div className="w-20 sm:w-24">
-            <label htmlFor="newTaskCycles" className="block text-xs font-medium text-gray-600 mb-0.5">Cycles</label>
-            <input type="number" id="newTaskCycles" min="1" value={newTaskEstimatedCycles}
-              onChange={(e) => setNewTaskEstimatedCycles(Number(e.target.value))}
-              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#6e00ff] focus:border-[#6e00ff] text-sm"/>
-          </div>
-          <button onClick={addTask}
-            className="px-3 py-1.5 bg-[#6e00ff] text-white rounded-md hover:bg-[#5500cc] transition-colors self-end h-[34px] text-sm">
-            <Plus size={18} />
-          </button>
+      <div className={`border-t border-gray-200 dark:border-gray-700 pt-6 mt-4 transition-opacity duration-300 ${isInFocusMode || showSettingsModal ? 'opacity-10 pointer-events-none h-0 overflow-hidden' : 'opacity-100'}`}>
+        <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">Công việc của bạn</h3>
+            {!showTaskForm && (
+                <button 
+                    onClick={() => setShowTaskForm(true)}
+                    className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    title="Thêm công việc mới"
+                >
+                    <Plus size={20}/>
+                </button>
+            )}
         </div>
+        
+        <AnimatePresence>
+        {showTaskForm && (
+            <motion.form 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                onSubmit={(e) => { e.preventDefault(); addTask(); }} 
+                className="flex flex-col sm:flex-row gap-2 mb-4 items-end p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm"
+            >
+            <div className="flex-1 w-full sm:w-auto">
+                <label htmlFor="newTaskName" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">Tên công việc</label>
+                <input type="text" id="newTaskName" value={newTaskName}
+                onChange={(e) => setNewTaskName(e.target.value)}
+                placeholder="Thêm công việc mới..."
+                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
+            </div>
+            <div className="w-full sm:w-20">
+                <label htmlFor="newTaskCycles" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-0.5">Cycles</label>
+                <input type="number" id="newTaskCycles" min="1" value={newTaskEstimatedCycles}
+                onChange={(e) => setNewTaskEstimatedCycles(Number(e.target.value))}
+                className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-purple-500 dark:focus:border-purple-400 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                <button type="submit"
+                    className="flex-1 sm:flex-none px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors self-end h-[34px] text-sm flex items-center justify-center gap-1">
+                    <Save size={16} /> Lưu
+                </button>
+                <button type="button" onClick={() => setShowTaskForm(false)}
+                    className="flex-1 sm:flex-none px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors self-end h-[34px] text-sm flex items-center justify-center gap-1">
+                    <XCircle size={16} /> Hủy
+                </button>
+            </div>
+            </motion.form>
+        )}
+        </AnimatePresence>
 
-        {inProgressTasks.length > 0 && <div className="text-sm mb-2 text-gray-600 font-medium">Đang thực hiện:</div>}
+
+        {inProgressTasks.length > 0 && <div className="text-sm mb-2 text-gray-500 dark:text-gray-400 font-medium">Đang thực hiện:</div>}
         <div className="space-y-2">
-          {inProgressTasks.length === 0 && completedTasks.length === 0 &&
-            <p className="text-sm text-gray-400 text-center py-3 italic">Chưa có công việc nào được thêm.</p>
+          {inProgressTasks.length === 0 && completedTasks.length === 0 && !showTaskForm &&
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-3 italic">Chưa có công việc nào. Nhấn + để thêm.</p>
           }
           {inProgressTasks.map(task => (
-            <div key={task.id} className={`p-3 rounded-lg border transition-all duration-200 bg-white ${activeTaskId === task.id ? 'border-purple-500 shadow-lg ring-1 ring-purple-500' : 'border-gray-200 hover:border-gray-300'}`}>
+            <div key={task.id} className={`p-3 rounded-lg border transition-all duration-200 
+                ${activeTaskId === task.id 
+                    ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-500 dark:border-purple-600 shadow-lg ring-1 ring-purple-500 dark:ring-purple-600' 
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2.5 flex-1 min-w-0">
                     <button onClick={() => toggleTaskStatus(task.id)}
-                        className={`p-1.5 rounded-full transition-colors flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-500`}>
+                        className={`p-1.5 rounded-full transition-colors flex-shrink-0 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400`}>
                         <Check size={14} />
                     </button>
-                    <span className={`text-sm truncate text-gray-800`} title={task.name}>
+                    <span className={`text-sm truncate text-gray-800 dark:text-gray-100`} title={task.name}>
                         {task.name}
                     </span>
                     </div>
@@ -771,22 +767,20 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
                       }}
                     disabled={task.status !== 'in_progress'}
                     className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                        task.status === 'completed'
-                            ? 'bg-green-100 text-green-700 cursor-default'
-                                : activeTaskId === task.id
-                                    ? 'bg-purple-600 text-white shadow-sm'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700'}`}>
-                    {task.status === 'completed' ? 'Đã xong' : (activeTaskId === task.id ? 'Đang làm' : 'Chọn làm')}
+                        activeTaskId === task.id
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-purple-100 dark:hover:bg-purple-800/50 hover:text-purple-700 dark:hover:text-purple-300'}`}>
+                    {activeTaskId === task.id ? 'Đang làm' : 'Chọn làm'}
                     </button>
                 </div>
-                <div className="mt-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 pl-9 space-y-1 sm:space-y-0">
+                <div className="mt-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 pl-9 space-y-1 sm:space-y-0">
                     <span className="flex items-center" title="Số chu kỳ đã hoàn thành / Số chu kỳ dự kiến">
-                    <ListChecks size={14} className="mr-1 text-blue-500 flex-shrink-0" />
+                    <ListChecks size={14} className="mr-1 text-blue-500 dark:text-blue-400 flex-shrink-0" />
                     {task.cyclesCompleted} / {task.estimatedCycles} cycles
                     </span>
                     {task.status === 'in_progress' && task.estimatedCycles > task.cyclesCompleted && (
                         <span className="flex items-center" title="Thời gian dự kiến hoàn thành">
-                        <Clock size={14} className="mr-1 text-orange-500 flex-shrink-0" />
+                        <Clock size={14} className="mr-1 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                         Dự kiến: {calculateEstimatedCompletionDateTime(task)}
                         </span>
                     )}
@@ -796,10 +790,10 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         </div>
 
         {completedTasks.length > 0 && (
-            <div className="mt-5 pt-3 border-t border-gray-200">
+            <div className="mt-5 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <button
                     onClick={() => setShowCompletedTasksSection(!showCompletedTasksSection)}
-                    className="text-sm font-medium text-gray-700 hover:text-purple-600 flex items-center w-full justify-between py-1"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 flex items-center w-full justify-between py-1"
                 >
                     <span>Công việc đã hoàn thành ({completedTasks.length})</span>
                     <ChevronDown size={18} className={`transition-transform ${showCompletedTasksSection ? 'rotate-180' : ''}`} />
@@ -811,23 +805,23 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
                         className="overflow-hidden mt-2 space-y-2"
                     >
                     {completedTasks.map(task => (
-                        <div key={task.id} className={`p-3 rounded-lg border opacity-80 bg-gray-50 border-gray-200`}>
+                        <div key={task.id} className={`p-3 rounded-lg border opacity-70 bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700/50`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2.5 flex-1 min-w-0">
                                 <button onClick={() => toggleTaskStatus(task.id)}
                                     className={`p-1.5 rounded-full transition-colors flex-shrink-0 bg-green-500 hover:bg-green-600 text-white`}>
                                     <Check size={14} />
                                 </button>
-                                <span className={`text-sm truncate line-through text-gray-500`} title={task.name}>
+                                <span className={`text-sm truncate line-through text-gray-500 dark:text-gray-400`} title={task.name}>
                                     {task.name}
                                 </span>
                                 </div>
-                                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 cursor-default whitespace-nowrap">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 cursor-default whitespace-nowrap">
                                     Đã xong
                                 </span>
                             </div>
-                             <div className="mt-2 flex items-center text-xs text-gray-400 pl-9">
-                                <ListChecks size={14} className="mr-1 text-blue-400 flex-shrink-0" />
+                             <div className="mt-2 flex items-center text-xs text-gray-400 dark:text-gray-500 pl-9">
+                                <ListChecks size={14} className="mr-1 text-blue-400 dark:text-blue-500 flex-shrink-0" />
                                 Hoàn thành {task.cyclesCompleted} / {task.estimatedCycles} cycles
                             </div>
                         </div>
@@ -847,23 +841,14 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         onClose={() => setShowSettingsModal(false)}
         currentSettings={settings}
         onSaveSettings={(newSettings) => {
-          if (backgroundMusicAudioRef.current && settings.includeMusic && !newSettings.includeMusic) {
-            backgroundMusicAudioRef.current.pause();
+          const oldSettings = settings; 
+          setSettings(newSettings); 
+
+          if (backgroundMusicAudioRef.current) {
+            if (oldSettings.includeMusic && !newSettings.includeMusic && !backgroundMusicAudioRef.current.paused) {
+              backgroundMusicAudioRef.current.pause();
+            }
           }
-          if (newSettings.currentMusicTrackIndex !== settings.currentMusicTrackIndex && backgroundMusicAudioRef.current) {
-             const trackObject = BACKGROUND_MUSIC_TRACKS[newSettings.currentMusicTrackIndex];
-             if(trackObject) {
-                const newSrc = trackObject.src;
-                const absoluteNewSrc = (new URL(newSrc, window.location.origin)).href;
-                if (backgroundMusicAudioRef.current.src !== absoluteNewSrc) {
-                    backgroundMusicAudioRef.current.src = newSrc;
-                }
-                if(isRunning && newSettings.includeMusic && currentMode === 'work') {
-                    backgroundMusicAudioRef.current.play().catch(e => console.error("Error playing music after settings change:", e));
-                }
-             }
-          }
-          setSettings(newSettings);
         }}
       />
       {taskToConfirm && (
