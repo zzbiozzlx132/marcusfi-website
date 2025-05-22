@@ -100,7 +100,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     }
     const soundUrl = new URL(settingsData.selectedNotificationSound, window.location.origin).href;
     previewAudioRef.current.src = soundUrl;
-    previewAudioRef.current.play().catch(e => console.error("Lỗi nghe thử âm báo:", e));
+    previewAudioRef.current.play().catch(e => console.error("Lỗi nghe thử âm báo:", e.name, e.message));
   };
 
   if (!isOpen) return null;
@@ -177,7 +177,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
                     <input type="checkbox" id="modalDarkModeOnStart" checked={settingsData.darkModeOnStart}
                     onChange={(e) => handleChange('darkModeOnStart', e.target.checked)}
                     className="h-4 w-4 text-purple-600 focus:ring-offset-0 focus:ring-1 focus:ring-purple-500 border-gray-300 dark:border-gray-600 rounded"/>
-                    <label htmlFor="modalDarkModeOnStart" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">Dark Mode khi Start (Work)</label> {/* Sửa label */}
+                    <label htmlFor="modalDarkModeOnStart" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">Dark Mode khi Start (Work)</label>
                 </div>
             </div>
         </div>
@@ -332,6 +332,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   const notificationSoundAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number>();
   const alarmPlayedCountRef = useRef(0); 
+  const initialUserInteractionRef = useRef(false); // Ref để theo dõi tương tác đầu tiên
 
   useEffect(() => {
     localStorage.setItem('timerSettings_v2', JSON.stringify(settings));
@@ -352,43 +353,75 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     activeTaskId === null ? localStorage.removeItem('timerActiveTaskId') : localStorage.setItem('timerActiveTaskId', JSON.stringify(activeTaskId));
   }, [activeTaskId]);
 
-  // --- CẬP NHẬT useEffect CHO FOCUS MODE ---
   useEffect(() => {
     const newFocusModeState = isRunning && settings.darkModeOnStart && currentMode === 'work';
     if (newFocusModeState !== isInFocusMode) {
       setIsInFocusMode(newFocusModeState);
       setIsPageInFocusMode(newFocusModeState);
-      if (!newFocusModeState) {
-          setShowControlsInFocus(false);
-      }
+      if (!newFocusModeState) setShowControlsInFocus(false);
     }
   }, [isRunning, settings.darkModeOnStart, currentMode, setIsPageInFocusMode, isInFocusMode]);
-  // --- KẾT THÚC CẬP NHẬT ---
+
+  // useEffect để thiết lập src ban đầu cho notification sound
+  useEffect(() => {
+    if (notificationSoundAudioRef.current && settings.selectedNotificationSound) {
+        const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
+        if (notificationSoundAudioRef.current.src !== soundUrl) {
+            notificationSoundAudioRef.current.src = soundUrl;
+        }
+    }
+  }, [settings.selectedNotificationSound]);
 
 
   const playNotificationSound = useCallback(() => {
-    if (!notificationSoundAudioRef.current || settings.alarmSoundRepeat <= 0) return;
+    console.log("[Notification] playNotificationSound called. Repeat count:", settings.alarmSoundRepeat);
+    if (!notificationSoundAudioRef.current || settings.alarmSoundRepeat <= 0) {
+      console.log("[Notification] Sound disabled or ref not available.");
+      return;
+    }
     const audio = notificationSoundAudioRef.current;
     const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
-    if (audio.src !== soundUrl) audio.src = soundUrl;
+    
+    console.log(`[Notification] Target src: ${soundUrl}, Current src: ${audio.src}`);
+    if (audio.src !== soundUrl) {
+      console.log(`[Notification] Updating src to ${soundUrl}`);
+      audio.src = soundUrl;
+      // iOS có thể cần load() nếu src thay đổi ngay trước khi play
+      // Tuy nhiên, useEffect ở trên đã lo việc set src ban đầu.
+      // Nếu src thay đổi ở đây, có thể cần audio.load() và chờ 'canplaythrough'
+    }
+
     alarmPlayedCountRef.current = 0; 
+    
     const playCurrentSequence = () => {
+      console.log(`[Notification] Attempting play. Count: ${alarmPlayedCountRef.current}, Target: ${settings.alarmSoundRepeat}`);
       if (alarmPlayedCountRef.current < settings.alarmSoundRepeat) {
         audio.currentTime = 0;
-        audio.play().catch(e => {
-          console.error("Lỗi phát âm báo:", e);
-          audio.removeEventListener('ended', onEndedHandler); 
-        });
+        console.log("[Notification] Calling audio.play()");
+        audio.play()
+          .then(() => {
+            console.log(`[Notification] Play #${alarmPlayedCountRef.current + 1} started for ${audio.src}.`);
+          })
+          .catch(e => {
+            console.error("[Notification] Lỗi phát âm báo:", e.name, e.message);
+            audio.removeEventListener('ended', onEndedHandler); 
+          });
       } else {
+        console.log("[Notification] Repeat sequence finished.");
         audio.removeEventListener('ended', onEndedHandler); 
       }
     };
+
     const onEndedHandler = () => {
       alarmPlayedCountRef.current++; 
+      console.log(`[Notification] Sound ended. Count is now: ${alarmPlayedCountRef.current}`);
       playCurrentSequence(); 
     };
+
     audio.removeEventListener('ended', onEndedHandler); 
     audio.addEventListener('ended', onEndedHandler);
+    
+    console.log("[Notification] Starting first play of sequence.");
     playCurrentSequence(); 
   }, [settings.selectedNotificationSound, settings.alarmSoundRepeat]);
 
@@ -465,7 +498,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         audio.load();
       }
       if (isRunning && audio.paused) {
-        audio.play().catch(e => console.error("Lỗi phát nhạc nền:", e));
+        audio.play().catch(e => console.error("Lỗi phát nhạc nền:", e.name, e.message));
       } else if (!isRunning && !audio.paused) {
         audio.pause();
       }
@@ -490,6 +523,38 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         else newTime = settings.longBreakDuration * 60;
         setTimeLeft(newTime);
     }
+
+    // --- CỐ GẮNG "MỞ KHÓA" AUDIO KHI START LẦN ĐẦU ---
+    if (!initialUserInteractionRef.current) {
+        console.log("Attempting to unlock audio context on first user interaction...");
+        if (notificationSoundAudioRef.current) {
+            const audio = notificationSoundAudioRef.current;
+            // Đảm bảo audio có src trước khi play để "unlock"
+            if (!audio.src && NOTIFICATION_SOUNDS.length > 0) {
+                 audio.src = new URL(settings.selectedNotificationSound, window.location.origin).href;
+            }
+            
+            if(audio.src){ // Chỉ play nếu có src
+                const wasMuted = audio.muted;
+                audio.muted = true; // Tắt tiếng để không phát ra âm thanh thật
+                audio.play()
+                .then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.muted = wasMuted; // Khôi phục trạng thái mute cũ
+                    console.log("Notification audio context likely unlocked.");
+                })
+                .catch(err => {
+                    console.warn(`Could not unlock notification audio:`, err.name, err.message);
+                    audio.muted = wasMuted;
+                });
+            }
+        }
+        // Tương tự có thể làm cho backgroundMusicAudioRef nếu cần
+        initialUserInteractionRef.current = true;
+    }
+    // --- KẾT THÚC MỞ KHÓA AUDIO ---
+
     setIsRunning(true);
   };
   const handlePause = () => {
