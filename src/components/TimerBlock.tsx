@@ -1,6 +1,6 @@
 // src/components/TimerBlock.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, BellRing, ChevronDown, X as XIcon, Trash2, Volume2, Save, XCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, /* BellRing, */ ChevronDown, X as XIcon, Trash2, Volume2, Save, XCircle } from 'lucide-react'; // Removed BellRing
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Task {
@@ -61,6 +61,12 @@ interface TimerBlockProps {
   setIsPageInFocusMode: (isFocus: boolean) => void;
 }
 
+// Specific type for items in the timeInputFields array
+interface TimeInputFieldItem {
+    label: string;
+    field: 'workDuration' | 'shortBreakDuration' | 'longBreakDuration';
+}
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -77,16 +83,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
   }, [initialSettings]);
 
   const handleChange = (field: keyof TimerSettings, value: string | number | boolean) => {
-    let numericValue = value;
+    let processedValue = value;
     if (typeof value === 'string' && (field === 'workDuration' || field === 'shortBreakDuration' || field === 'longBreakDuration' || field === 'cyclesBeforeLongBreak' || field === 'alarmSoundRepeat')) {
-        numericValue = parseInt(value, 10);
+        let numericValue = parseInt(value, 10);
         if (isNaN(numericValue) || numericValue < 1) numericValue = 1;
+        processedValue = numericValue;
     }
-    if (field === 'alarmSoundRepeat') numericValue = Math.max(1, Math.min(5, Number(numericValue)));
-    else if (field !== 'includeMusic' && field !== 'darkModeOnStart' && field !== 'selectedNotificationSound' && field !== 'currentMusicTrackIndex' && typeof numericValue === 'number') {
-      numericValue = Math.max(1, Number(numericValue));
+
+    if (field === 'alarmSoundRepeat' && typeof processedValue === 'number') {
+      processedValue = Math.max(1, Math.min(5, processedValue));
+    } else if ( (field === 'workDuration' || field === 'shortBreakDuration' || field === 'longBreakDuration' || field === 'cyclesBeforeLongBreak') && typeof processedValue === 'number' ) {
+      processedValue = Math.max(1, processedValue);
     }
-    setSettingsData(prev => ({ ...prev, [field]: numericValue as any }));
+    // For boolean fields, processedValue remains boolean. For string fields, it remains string.
+    setSettingsData(prev => ({ ...prev, [field]: processedValue }));
   };
 
   const handleSave = () => {
@@ -105,6 +115,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
 
   if (!isOpen) return null;
 
+  const timeInputFields: TimeInputFieldItem[] = [
+    {label: 'Pomodoro', field: 'workDuration'},
+    {label: 'Short Break', field: 'shortBreakDuration'},
+    {label: 'Long Break', field: 'longBreakDuration'},
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -122,28 +138,33 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
             <XIcon size={20} />
           </button>
         </div>
-        <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-                {[
-                    {label: 'Tập trung (phút)', field: 'workDuration', value: settingsData.workDuration},
-                    {label: 'Nghỉ ngắn (phút)', field: 'shortBreakDuration', value: settingsData.shortBreakDuration},
-                    {label: 'Nghỉ dài (phút)', field: 'longBreakDuration', value: settingsData.longBreakDuration},
-                    {label: 'Chu kỳ / Nghỉ dài', field: 'cyclesBeforeLongBreak', value: settingsData.cyclesBeforeLongBreak},
-                ].map(item => (
+        
+        <div className="space-y-4">
+            {/* Timer Durations Section */}
+            <div>
+              <div className="flex items-center text-gray-500 dark:text-gray-400 mb-1">
+                <Clock size={16} className="mr-1.5" />
+                <span className="text-xs font-semibold uppercase tracking-wider">TIMER</span>
+              </div>
+              <label className="block text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1.5">Time (minutes)</label>
+              <div className="grid grid-cols-3 gap-x-3">
+                {timeInputFields.map((item: TimeInputFieldItem) => ( // Explicitly type item here
                     <div key={item.field}>
-                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{item.label}</label>
-                        <input type="number" min="1" value={item.value}
-                        onChange={(e) => handleChange(item.field as keyof TimerSettings, e.target.value)}
-                        className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
+                        <label htmlFor={item.field} className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{item.label}</label>
+                        <input 
+                            type="number" 
+                            id={item.field}
+                            min="1" 
+                            value={settingsData[item.field]} // This should now be fine as settingsData[item.field] is number
+                            onChange={(e) => handleChange(item.field, e.target.value)}
+                            className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-center"
+                        />
                     </div>
                 ))}
+              </div>
             </div>
-             <div>
-                <label htmlFor="alarmRepeat" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Số lần lặp âm báo (1-5)</label>
-                <input type="number" id="alarmRepeat" min="1" max="5" value={settingsData.alarmSoundRepeat}
-                  onChange={(e) => handleChange('alarmSoundRepeat', e.target.value)}
-                  className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"/>
-            </div>
+            
+            {/* Notification Sound - Moved Up */}
             <div>
               <label htmlFor="notificationSound" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Âm thanh thông báo</label>
               <div className="flex items-center space-x-2">
@@ -166,6 +187,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
                 </button>
               </div>
             </div>
+
+            {/* Cycles before long break & Alarm repeat - In one row */}
+            <div className="grid grid-cols-2 gap-x-3">
+                <div>
+                    <label htmlFor="cyclesBeforeLongBreak" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Chu kỳ / Nghỉ dài</label>
+                    <input type="number" id="cyclesBeforeLongBreak" min="1" value={settingsData.cyclesBeforeLongBreak}
+                    onChange={(e) => handleChange('cyclesBeforeLongBreak', e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-center"/>
+                </div>
+                <div>
+                    <label htmlFor="alarmRepeat" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Số lần lặp âm báo (1-5)</label>
+                    <input type="number" id="alarmRepeat" min="1" max="5" value={settingsData.alarmSoundRepeat}
+                    onChange={(e) => handleChange('alarmSoundRepeat', e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-center"/>
+                </div>
+            </div>
+            
+            {/* Checkboxes */}
             <div className="flex items-center justify-between pt-2 space-x-4">
                 <div className="flex items-center">
                     <input type="checkbox" id="modalIncludeMusic" checked={settingsData.includeMusic}
@@ -183,7 +222,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
         </div>
         <button
             onClick={handleSave}
-            className="w-full mt-5 py-2.5 px-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            className="w-full mt-6 py-2.5 px-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
         >
             Lưu Cài Đặt
         </button>
@@ -191,6 +230,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     </motion.div>
   );
 };
+
+
+// ... (The rest of your TimerBlock component, ConfirmTaskActionModal, and TimerBlock implementation remains the same)
+// Make sure to include the rest of the TimerBlock.tsx content here. For brevity, I'm only showing the changed SettingsModal and related types/constants.
 
 interface ConfirmTaskActionModalProps {
     isOpen: boolean;
@@ -277,7 +320,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
             let validStatus: Task['status'] = 'in_progress';
             if (task.status === 'in_progress' || task.status === 'completed') {
               validStatus = task.status;
-            } else if (task.status === 'hidden') {
+            } else if (task.status === 'hidden') { // Legacy status mapping
               validStatus = 'completed';
             }
             return {
@@ -332,7 +375,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   const notificationSoundAudioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<number>();
   const alarmPlayedCountRef = useRef(0); 
-  const initialUserInteractionRef = useRef(false); // Ref để theo dõi tương tác đầu tiên
+  const initialUserInteractionRef = useRef(false); 
 
   useEffect(() => {
     localStorage.setItem('timerSettings_v2', JSON.stringify(settings));
@@ -346,7 +389,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
       else newFullDuration = settings.longBreakDuration * 60;
       setTimeLeft(newFullDuration);
     }
-  }, [currentMode, settings.workDuration, settings.shortBreakDuration, settings.longBreakDuration, settings.cyclesBeforeLongBreak]);
+  }, [currentMode, settings.workDuration, settings.shortBreakDuration, settings.longBreakDuration, settings.cyclesBeforeLongBreak, isRunning]);
 
   useEffect(() => { localStorage.setItem('timerTasks_v2', JSON.stringify(tasks)); }, [tasks]);
   useEffect(() => {
@@ -362,7 +405,6 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     }
   }, [isRunning, settings.darkModeOnStart, currentMode, setIsPageInFocusMode, isInFocusMode]);
 
-  // useEffect để thiết lập src ban đầu cho notification sound
   useEffect(() => {
     if (notificationSoundAudioRef.current && settings.selectedNotificationSound) {
         const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
@@ -374,54 +416,39 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
 
 
   const playNotificationSound = useCallback(() => {
-    console.log("[Notification] playNotificationSound called. Repeat count:", settings.alarmSoundRepeat);
     if (!notificationSoundAudioRef.current || settings.alarmSoundRepeat <= 0) {
-      console.log("[Notification] Sound disabled or ref not available.");
       return;
     }
     const audio = notificationSoundAudioRef.current;
     const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
     
-    console.log(`[Notification] Target src: ${soundUrl}, Current src: ${audio.src}`);
     if (audio.src !== soundUrl) {
-      console.log(`[Notification] Updating src to ${soundUrl}`);
       audio.src = soundUrl;
-      // iOS có thể cần load() nếu src thay đổi ngay trước khi play
-      // Tuy nhiên, useEffect ở trên đã lo việc set src ban đầu.
-      // Nếu src thay đổi ở đây, có thể cần audio.load() và chờ 'canplaythrough'
     }
 
     alarmPlayedCountRef.current = 0; 
     
     const playCurrentSequence = () => {
-      console.log(`[Notification] Attempting play. Count: ${alarmPlayedCountRef.current}, Target: ${settings.alarmSoundRepeat}`);
       if (alarmPlayedCountRef.current < settings.alarmSoundRepeat) {
         audio.currentTime = 0;
-        console.log("[Notification] Calling audio.play()");
         audio.play()
-          .then(() => {
-            console.log(`[Notification] Play #${alarmPlayedCountRef.current + 1} started for ${audio.src}.`);
-          })
           .catch(e => {
             console.error("[Notification] Lỗi phát âm báo:", e.name, e.message);
             audio.removeEventListener('ended', onEndedHandler); 
           });
       } else {
-        console.log("[Notification] Repeat sequence finished.");
         audio.removeEventListener('ended', onEndedHandler); 
       }
     };
 
     const onEndedHandler = () => {
       alarmPlayedCountRef.current++; 
-      console.log(`[Notification] Sound ended. Count is now: ${alarmPlayedCountRef.current}`);
       playCurrentSequence(); 
     };
 
     audio.removeEventListener('ended', onEndedHandler); 
     audio.addEventListener('ended', onEndedHandler);
     
-    console.log("[Notification] Starting first play of sequence.");
     playCurrentSequence(); 
   }, [settings.selectedNotificationSound, settings.alarmSoundRepeat]);
 
@@ -456,7 +483,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     }
     setIsRunning(false); 
     setCurrentMode(nextMode); 
-  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]);
+  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]); // settings should be enough here
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -485,19 +512,20 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     };
     audio.removeEventListener('ended', handleMusicEnded);
     audio.addEventListener('ended', handleMusicEnded);
+
     if (settings.includeMusic && currentMode === 'work') {
       const currentTrackObject = BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex];
       if (!currentTrackObject) {
         if (!audio.paused) audio.pause();
         return;
       }
-      const newSrc = currentTrackObject.src;
-      const absoluteNewSrc = (new URL(newSrc, window.location.origin)).href;
-      if (audio.src !== absoluteNewSrc) {
+      const newSrc = new URL(currentTrackObject.src, window.location.origin).href;
+      if (audio.src !== newSrc) {
         audio.src = newSrc; 
-        audio.load();
+        audio.load(); // Important to load new src
       }
       if (isRunning && audio.paused) {
+        // Delay play slightly after src change if needed, or ensure it's playable
         audio.play().catch(e => console.error("Lỗi phát nhạc nền:", e.name, e.message));
       } else if (!isRunning && !audio.paused) {
         audio.pause();
@@ -510,7 +538,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     return () => {
       audio.removeEventListener('ended', handleMusicEnded);
     };
-  }, [isRunning, currentMode, settings, setSettings]);
+  }, [isRunning, currentMode, settings.includeMusic, settings.currentMusicTrackIndex, setSettings]); // Added setSettings
 
   const handleStart = () => {
     if (currentMode === 'work' && !activeTaskId) {
@@ -524,37 +552,47 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         setTimeLeft(newTime);
     }
 
-    // --- CỐ GẮNG "MỞ KHÓA" AUDIO KHI START LẦN ĐẦU ---
     if (!initialUserInteractionRef.current) {
-        console.log("Attempting to unlock audio context on first user interaction...");
         if (notificationSoundAudioRef.current) {
-            const audio = notificationSoundAudioRef.current;
-            // Đảm bảo audio có src trước khi play để "unlock"
-            if (!audio.src && NOTIFICATION_SOUNDS.length > 0) {
-                 audio.src = new URL(settings.selectedNotificationSound, window.location.origin).href;
+            const audioNtf = notificationSoundAudioRef.current;
+            if (!audioNtf.src && settings.selectedNotificationSound) {
+                 audioNtf.src = new URL(settings.selectedNotificationSound, window.location.origin).href;
             }
-            
-            if(audio.src){ // Chỉ play nếu có src
-                const wasMuted = audio.muted;
-                audio.muted = true; // Tắt tiếng để không phát ra âm thanh thật
-                audio.play()
+            if(audioNtf.src){ 
+                const wasMuted = audioNtf.muted;
+                audioNtf.muted = true; 
+                audioNtf.play()
                 .then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.muted = wasMuted; // Khôi phục trạng thái mute cũ
-                    console.log("Notification audio context likely unlocked.");
+                    audioNtf.pause();
+                    audioNtf.currentTime = 0;
+                    audioNtf.muted = wasMuted; 
                 })
-                .catch(err => {
-                    console.warn(`Could not unlock notification audio:`, err.name, err.message);
-                    audio.muted = wasMuted;
+                .catch(() => { // Mark err as unused or log it
+                    audioNtf.muted = wasMuted;
                 });
             }
         }
-        // Tương tự có thể làm cho backgroundMusicAudioRef nếu cần
+         if (backgroundMusicAudioRef.current && settings.includeMusic) {
+            const audioBg = backgroundMusicAudioRef.current;
+             if (!audioBg.src && BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex]) {
+                 audioBg.src = new URL(BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex].src, window.location.origin).href;
+             }
+            if(audioBg.src){
+                const wasMuted = audioBg.muted;
+                audioBg.muted = true;
+                audioBg.play()
+                .then(() => {
+                    audioBg.pause();
+                    audioBg.currentTime = 0;
+                    audioBg.muted = wasMuted;
+                })
+                .catch(() => { // Mark err as unused or log it
+                    audioBg.muted = wasMuted;
+                });
+            }
+        }
         initialUserInteractionRef.current = true;
     }
-    // --- KẾT THÚC MỞ KHÓA AUDIO ---
-
     setIsRunning(true);
   };
   const handlePause = () => {
@@ -592,6 +630,8 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     if (statusOrder[a.status] !== statusOrder[b.status]) {
         return statusOrder[a.status] - statusOrder[b.status];
     }
+    // Optional: Sort by name or another criteria if statuses are the same
+    // return a.name.localeCompare(b.name); 
     return 0;
   };
 
@@ -603,7 +643,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     } else if (taskToUpdate.status === 'completed') {
         setTasks((prevTasks): Task[] =>
             prevTasks.map((task): Task =>
-                task.id === taskId ? { ...task, status: 'in_progress' } : task
+                task.id === taskId ? { ...task, status: 'in_progress' } : task // Optionally reset cyclesCompleted: 0
             ).sort(taskSortLogic)
         );
     }
@@ -641,9 +681,26 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     if (cyclesNeeded <= 0) return "Sắp xong!";
     let totalMinutesRequired = 0;
     let currentPomodoroCycleCount = cycleCount;
+    
+    let initialTimeOffset = 0;
+    if (activeTaskId === task.id && currentMode === 'work' && isRunning) {
+        initialTimeOffset = (settings.workDuration * 60 - timeLeft) / 60; 
+        if (initialTimeOffset >= settings.workDuration && settings.workDuration > 0) { // Cap offset
+            initialTimeOffset = settings.workDuration - (1/60) ; 
+        } else if (initialTimeOffset < 0) {
+            initialTimeOffset = 0;
+        }
+    }
+
+
     for (let i = 0; i < cyclesNeeded; i++) {
-        totalMinutesRequired += settings.workDuration;
-        if (i < cyclesNeeded - 1) {
+        if (i === 0) { 
+            totalMinutesRequired += Math.max(0, settings.workDuration - initialTimeOffset);
+        } else {
+            totalMinutesRequired += settings.workDuration;
+        }
+
+        if (i < cyclesNeeded - 1) { 
             currentPomodoroCycleCount++;
             if (currentPomodoroCycleCount >= settings.cyclesBeforeLongBreak) {
                 totalMinutesRequired += settings.longBreakDuration; currentPomodoroCycleCount = 0;
@@ -653,7 +710,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         }
     }
     const completionDate = new Date(Date.now() + totalMinutesRequired * 60 * 1000);
-    const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit' };
     return completionDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
            ", " + completionDate.toLocaleDateString('vi-VN', dateOptions);
   };
@@ -747,7 +804,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
           <p className="text-lg sm:text-xl text-white font-semibold truncate" title={activeTaskDetails.name}>
             {activeTaskDetails.name}
           </p>
-          <p className="text-xs sm:text-sm text-gray-400 mt-2">
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">
               {activeTaskDetails.cyclesCompleted} / {activeTaskDetails.estimatedCycles} sessions - Dự kiến: {calculateEstimatedCompletionDateTime(activeTaskDetails)}
           </p>
         </div>
@@ -898,7 +955,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         )}
       </div>
 
-      <audio ref={backgroundMusicAudioRef} />
+      <audio ref={backgroundMusicAudioRef} loop={false}/>
       <audio ref={notificationSoundAudioRef} />
 
       <SettingsModal
@@ -906,12 +963,21 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         onClose={() => setShowSettingsModal(false)}
         currentSettings={settings}
         onSaveSettings={(newSettings) => {
-          const oldSettings = settings; 
+          const oldSettings = {...settings}; 
           setSettings(newSettings); 
 
           if (backgroundMusicAudioRef.current) {
             if (oldSettings.includeMusic && !newSettings.includeMusic && !backgroundMusicAudioRef.current.paused) {
               backgroundMusicAudioRef.current.pause();
+            }
+            if (newSettings.includeMusic && oldSettings.currentMusicTrackIndex !== newSettings.currentMusicTrackIndex) {
+                const track = BACKGROUND_MUSIC_TRACKS[newSettings.currentMusicTrackIndex];
+                if (track) {
+                    backgroundMusicAudioRef.current.src = new URL(track.src, window.location.origin).href;
+                    if (isRunning && currentMode === 'work' && initialUserInteractionRef.current) { // Only play if user interacted
+                        backgroundMusicAudioRef.current.play().catch(e => console.error("Error playing new track:", e));
+                    }
+                }
             }
           }
         }}
