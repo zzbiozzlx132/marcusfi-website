@@ -1,1 +1,0 @@
-import{j as n}from"./index-BrKBQ3dl.js";const e=()=>n.jsxs("div",{className:"p-4",children:[n.jsx("h1",{className:"text-2xl font-bold",children:"Công Cụ Tính Lãi Kép"}),n.jsx("p",{children:"Nội dung trang đang được xây dựng."})]});export{e as default};
