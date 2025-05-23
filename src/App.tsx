@@ -1,6 +1,5 @@
 // src/App.tsx
-import React, { Suspense, lazy, useState, useEffect } from 'react';
-// THÊM useLocation từ react-router-dom
+import React, { Suspense, lazy, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link as RouterLink, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -10,7 +9,7 @@ import WelcomeModal from './components/WelcomeModal';
 import MainLayout from './components/MainLayout';
 import ScrollToTop from './components/ScrollToTop';
 
-// Page Components (giữ nguyên)
+// Page Components
 const Hero = lazy(() => import('./components/Hero'));
 const Problem = lazy(() => import('./components/Problem'));
 const LeadMagnet = lazy(() => import('./components/LeadMagnet'));
@@ -29,6 +28,11 @@ const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 
 const TimerBlockPage = lazy(() => import('./pages/TimerBlockPage'));
 const FICalculatorPage = lazy(() => import('./pages/FICalculatorPage'));
+const BudgetPlannerPage = lazy(() => import('./pages/BudgetPlannerPage'));
+// << THAY ĐỔI: Cập nhật tên import cho các trang công cụ mới >>
+const LatteFactorPage = lazy(() => import('./pages/LatteFactorPage'));
+const DebtOrInvestPage = lazy(() => import('./pages/DebtOrInvestPage'));
+const CompoundInterestPage = lazy(() => import('./pages/CompoundInterestPage'));
 
 
 const myMusicTracks = [
@@ -51,8 +55,6 @@ export const LoadingSpinner: React.FC = () => (
   </div>
 );
 
-// << BẮT ĐẦU THAY ĐỔI: Tạo component con để chứa Routes và MusicPlayer >>
-// Component này sẽ được render bên trong BrowserRouter, nên có thể dùng useLocation
 const AppRoutesAndPlayer: React.FC<{
   showWelcomeModal: boolean;
   userHasInteracted: boolean;
@@ -89,8 +91,14 @@ const AppRoutesAndPlayer: React.FC<{
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             
+            {/* Tool Routes */}
             <Route path="/timer-block" element={<TimerBlockPage />} />
             <Route path="/fi-calculator" element={<FICalculatorPage />} />
+            <Route path="/budget-planner" element={<BudgetPlannerPage />} />
+            {/* << THAY ĐỔI: Cập nhật Routes cho các công cụ mới với tên và đường dẫn ngắn hơn >> */}
+            <Route path="/latte-factor" element={<LatteFactorPage />} />
+            <Route path="/debt-or-invest" element={<DebtOrInvestPage />} />
+            <Route path="/compound-interest" element={<CompoundInterestPage />} />
             
             <Route path="*" element={
                 <div className="min-h-screen bg-slate-900 text-white flex flex-col justify-center items-center p-4">
@@ -110,7 +118,6 @@ const AppRoutesAndPlayer: React.FC<{
         </Suspense>
       </div>
       
-      {/* MusicPlayer chỉ render nếu shouldShowMusicPlayer là true */}
       {shouldShowMusicPlayer && myMusicTracks.length > 0 && (
         <MusicPlayer 
           tracks={myMusicTracks} 
@@ -120,7 +127,6 @@ const AppRoutesAndPlayer: React.FC<{
     </>
   );
 };
-// << KẾT THÚC THAY ĐỔI: Tạo component con >>
 
 function App() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
@@ -131,8 +137,6 @@ function App() {
     setUserHasInteracted(true);
   };
 
-  // Logic WelcomeModal mỗi lần F5 (đã đúng, không thay đổi)
-
   return (
     <LanguageProvider>
       <AuthProvider>
@@ -141,7 +145,6 @@ function App() {
           
           {showWelcomeModal && <WelcomeModal onBegin={handleBeginJourney} />}
 
-          {/* << THAY ĐỔI: Sử dụng component con AppRoutesAndPlayer >> */}
           <AppRoutesAndPlayer 
             showWelcomeModal={showWelcomeModal} 
             userHasInteracted={userHasInteracted} 
