@@ -111,7 +111,7 @@ const InputField: React.FC<InputFieldProps> = ({
         {tooltip && (
           <span className="ml-1.5 group relative">
             <Info size={14} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-help" />
-            <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs p-2.5 text-xs text-white bg-slate-800 dark:bg-slate-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg leading-relaxed">
+            <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-md p-2.5 text-xs text-white bg-slate-800 dark:bg-slate-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg leading-relaxed">
               {tooltip}
             </span>
           </span>
@@ -174,24 +174,24 @@ const FormattedInputField: React.FC<FormattedInputFieldProps> = ({
     };
 
     const handleBlur = () => {
-        let finalNumericValueTyped: number | undefined = parseFormattedNumber(displayValue);
+        let finalNumericValue = parseFormattedNumber(displayValue);
     
-        if (finalNumericValueTyped === undefined) {
+        if (finalNumericValue === undefined) {
             if (isRequired) {
-                finalNumericValueTyped = min; // Gán giá trị min nếu bắt buộc và trống/không hợp lệ
+                finalNumericValue = min;
+                setDisplayValue(formatCurrency(finalNumericValue, false)); 
+                onValueChange(finalNumericValue);
             } else {
-                onValueChange(undefined); // Nếu không bắt buộc và trống, giá trị là undefined
+                onValueChange(undefined); 
                 setDisplayValue('');
-                return; // Thoát sớm
             }
+        } else { 
+            if (finalNumericValue < min) {
+                finalNumericValue = min;
+            }
+            setDisplayValue(formatCurrency(finalNumericValue, false));
+            onValueChange(finalNumericValue);
         }
-        // Từ đây, finalNumericValueTyped chắc chắn là một number (hoặc đã được gán min)
-        if (finalNumericValueTyped < min) {
-            finalNumericValueTyped = min;
-        }
-    
-        setDisplayValue(formatCurrency(finalNumericValueTyped, false));
-        onValueChange(finalNumericValueTyped);
     };
 
     return (
@@ -202,7 +202,7 @@ const FormattedInputField: React.FC<FormattedInputFieldProps> = ({
         {tooltip && (
             <span className="ml-1.5 group relative">
                 <Info size={14} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 cursor-help" />
-                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs p-2.5 text-xs text-white bg-slate-800 dark:bg-slate-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg leading-relaxed">
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-md p-2.5 text-xs text-white bg-slate-800 dark:bg-slate-700 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg leading-relaxed">
                 {tooltip}
                 </span>
             </span>
@@ -225,31 +225,33 @@ const FormattedInputField: React.FC<FormattedInputFieldProps> = ({
 type OptionType = 'asset_growth' | 'project_course' | 'savings' | 'manual_entry';
 type OptionKey = 'optionA' | 'optionB';
 
-interface DecisionOption { /* ... giữ nguyên ... */ 
+interface DecisionOption {
     name: string;
     initialInvestment: number | undefined;
     years: number;
     probabilitySuccess: number;
     optionType: OptionType;
     annualGrowthRateSuccess?: number;
-    valueRetentionFailure?: number;
+    valueRetentionFailure?: number; // % giá trị vốn gốc còn lại nếu thất bại
     savingsInterestRate?: number;
-    valueIfSuccess?: number | undefined;
-    valueIfFailure?: number | undefined;
+    valueIfSuccess?: number | undefined; // Dùng cho project_course & manual_entry
+    valueIfFailure?: number | undefined; // Dùng cho project_course & manual_entry
 }
-const initialDecisionOption: DecisionOption = { /* ... giữ nguyên ... */ 
+
+const initialDecisionOption: DecisionOption = {
     name: '',
     initialInvestment: undefined,
     years: 1,
     probabilitySuccess: 70,
-    optionType: 'manual_entry',
+    optionType: 'manual_entry', // Mặc định ban đầu
     valueIfSuccess: undefined,
-    valueIfFailure: 0,
-    annualGrowthRateSuccess: 7,
-    valueRetentionFailure: 90,
-    savingsInterestRate: 5,
+    valueIfFailure: 0,          // Mặc định thất bại là mất hết (ngoài vốn đầu tư)
+    annualGrowthRateSuccess: 7, // Mặc định gợi ý cho asset_growth
+    valueRetentionFailure: 90,  // Mặc định gợi ý cho asset_growth
+    savingsInterestRate: 5,     // Mặc định gợi ý cho savings
 };
-interface CalculationResult { /* ... giữ nguyên ... */ 
+
+interface CalculationResult {
     finalValueSuccess: number;
     finalValueFailure: number;
     expectedEndValue: number;
@@ -259,14 +261,14 @@ interface CalculationResult { /* ... giữ nguyên ... */
 interface InvestmentSuggestion {
     id: string;
     name: string;
-    annualReturnSuggestion: number; // Chỉ dùng annualReturnSuggestion
+    annualReturnSuggestion: number;
     note: string;
 }
 
 const assetGrowthSuggestions: InvestmentSuggestion[] = [
-    { id: 'gold', name: 'Vàng', annualReturnSuggestion: 5, note: 'Lợi nhuận trung bình dài hạn tham khảo. Giá vàng có thể biến động mạnh. (Đây là VÍ DỤ)' },
-    { id: 'vnindex', name: 'Chứng khoán (VN-Index)', annualReturnSuggestion: 12, note: 'Lợi nhuận trung bình dài hạn tham khảo, rủi ro và biến động cao. (Đây là VÍ DỤ)' },
-    { id: 'gov_bond', name: 'Trái phiếu Chính phủ (10 năm)', annualReturnSuggestion: 4, note: 'Rủi ro thấp hơn. Lãi suất thay đổi theo thị trường. (Đây là VÍ DỤ)' },
+    { id: 'gold', name: 'Vàng', annualReturnSuggestion: 5, note: 'Lợi nhuận tham khảo trung bình dài hạn. Giá vàng có thể biến động mạnh. (Đây là VÍ DỤ, tự nghiên cứu thêm)' },
+    { id: 'vnindex', name: 'Chứng khoán (VN-Index)', annualReturnSuggestion: 12, note: 'Lợi nhuận tham khảo trung bình dài hạn, rủi ro và biến động cao. (Đây là VÍ DỤ, tự nghiên cứu thêm)' },
+    { id: 'gov_bond', name: 'Trái phiếu Chính phủ (10 năm)', annualReturnSuggestion: 4, note: 'Rủi ro thấp hơn. Lãi suất thực tế thay đổi theo thị trường. (Đây là VÍ DỤ, tự nghiên cứu thêm)' },
 ];
 
 
@@ -274,7 +276,7 @@ const DecisionComparisonTool: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [optionA, setOptionA] = useState<DecisionOption>({ ...initialDecisionOption, name: 'Lựa chọn A', optionType: 'asset_growth' });
     const [optionB, setOptionB] = useState<DecisionOption>({ ...initialDecisionOption, name: 'Lựa chọn B', optionType: 'project_course' });
-    const [discountRate, setDiscountRate] = useState<number>(7);
+    const [discountRate, setDiscountRate] = useState<number>(7); // Tỷ lệ hoàn vốn mong muốn
 
     const [resultA, setResultA] = useState<CalculationResult | null>(null);
     const [resultB, setResultB] = useState<CalculationResult | null>(null);
@@ -289,6 +291,7 @@ const DecisionComparisonTool: React.FC = () => {
     ) => (value: string | number | undefined | OptionType) => {
         setter(prev => ({ ...prev, [field]: value }));
     };
+
     const getTerminalValues = (option: DecisionOption): { finalValueSuccess?: number, finalValueFailure?: number } => {
         if (option.initialInvestment === undefined || option.initialInvestment < 0 || option.years === undefined || option.years <= 0) {
             return { finalValueSuccess: undefined, finalValueFailure: undefined };
@@ -305,10 +308,12 @@ const DecisionComparisonTool: React.FC = () => {
             case 'savings':
                 const rSavings = (option.savingsInterestRate ?? 0) / 100;
                 const valSavings = P * Math.pow(1 + rSavings, n);
+                // Với tiết kiệm, thất bại (rất hiếm) coi là nhận lại vốn gốc
                 return { finalValueSuccess: valSavings, finalValueFailure: P };
             case 'project_course':
             case 'manual_entry':
             default:
+                // Đảm bảo rằng valueIfSuccess và valueIfFailure là number nếu có giá trị
                 const fvSuccess = typeof option.valueIfSuccess === 'number' ? option.valueIfSuccess : undefined;
                 const fvFailure = typeof option.valueIfFailure === 'number' ? option.valueIfFailure : undefined;
                 return { finalValueSuccess: fvSuccess, finalValueFailure: fvFailure };
@@ -321,20 +326,21 @@ const DecisionComparisonTool: React.FC = () => {
         if (!option.name.trim()) { currentErrors[`${optionKey}_name`] = "Tên không được trống."; isValid = false; }
         if (option.initialInvestment === undefined || option.initialInvestment < 0) { currentErrors[`${optionKey}_initialInvestment`] = "Vốn đầu tư phải >= 0."; isValid = false; }
         if (option.years === undefined || option.years <= 0) { currentErrors[`${optionKey}_years`] = "Thời gian phải > 0."; isValid = false; }
-        if (option.probabilitySuccess === undefined || option.probabilitySuccess < 0 || option.probabilitySuccess > 100) { currentErrors[`${optionKey}_probabilitySuccess`] = "Xác suất từ 0-100."; isValid = false; }
+        if (option.probabilitySuccess === undefined || option.probabilitySuccess < 0 || option.probabilitySuccess > 100) { currentErrors[`${optionKey}_probabilitySuccess`] = "Khả năng thành công từ 0-100%."; isValid = false; }
 
         const terminalValues = getTerminalValues(option);
-        if (terminalValues.finalValueSuccess === undefined || terminalValues.finalValueSuccess < 0) { currentErrors[`${optionKey}_valueIfSuccess_derived`] = "Giá trị thành công không hợp lệ hoặc thiếu thông tin."; isValid = false; }
-        if (terminalValues.finalValueFailure === undefined || terminalValues.finalValueFailure < 0) { currentErrors[`${optionKey}_valueIfFailure_derived`] = "Giá trị thất bại không hợp lệ hoặc thiếu thông tin."; isValid = false; }
+        if (terminalValues.finalValueSuccess === undefined || terminalValues.finalValueSuccess < 0) { currentErrors[`${optionKey}_valueIfSuccess_derived`] = "Thông tin cho kịch bản 'Thuận Lợi' chưa đủ hoặc không hợp lệ."; isValid = false; }
+        if (terminalValues.finalValueFailure === undefined || terminalValues.finalValueFailure < 0) { currentErrors[`${optionKey}_valueIfFailure_derived`] = "Thông tin cho kịch bản 'Không Thuận Lợi' chưa đủ hoặc không hợp lệ."; isValid = false; }
         
         switch (option.optionType) {
             case 'asset_growth':
-                if (option.annualGrowthRateSuccess === undefined || option.annualGrowthRateSuccess < -100) { currentErrors[`${optionKey}_annualGrowthRateSuccess`] = "Tăng trưởng TC không hợp lệ."; isValid = false; }
-                if (option.valueRetentionFailure === undefined || option.valueRetentionFailure < 0 || option.valueRetentionFailure > 200) { currentErrors[`${optionKey}_valueRetentionFailure`] = "% giá trị còn lại (TB) từ 0-200."; isValid = false; }
+                if (option.annualGrowthRateSuccess === undefined || option.annualGrowthRateSuccess < -100) { currentErrors[`${optionKey}_annualGrowthRateSuccess`] = "Tỷ lệ tăng trưởng (TC) không hợp lệ."; isValid = false; }
+                if (option.valueRetentionFailure === undefined || option.valueRetentionFailure < 0 || option.valueRetentionFailure > 200) { currentErrors[`${optionKey}_valueRetentionFailure`] = "% Giá trị còn lại (TB) phải từ 0-200."; isValid = false; }
                 break;
             case 'savings':
-                if (option.savingsInterestRate === undefined || option.savingsInterestRate < 0) { currentErrors[`${optionKey}_savingsInterestRate`] = "Lãi suất TK phải >= 0."; isValid = false; }
+                if (option.savingsInterestRate === undefined || option.savingsInterestRate < 0) { currentErrors[`${optionKey}_savingsInterestRate`] = "Lãi suất tiết kiệm phải >= 0."; isValid = false; }
                 break;
+            // project_course và manual_entry đã được validate thông qua terminalValues
         }
 
         setErrorMessages(prev => {
@@ -355,7 +361,7 @@ const DecisionComparisonTool: React.FC = () => {
         const probF = 1 - probS;
         const discountRateD = effectiveDiscountRate / 100;
         if (discountRateD < -1 && (1 + discountRateD) <= 0) { 
-             console.error("Discount rate too low, would result in non-real number for Math.pow");
+             console.error("Tỷ lệ chiết khấu quá thấp, có thể dẫn đến lỗi tính toán.");
              return null; 
         }
 
@@ -367,9 +373,23 @@ const DecisionComparisonTool: React.FC = () => {
 
         return {
             finalValueSuccess, finalValueFailure,
-            expectedEndValue: (finalValueSuccess * probS) + (finalValueFailure * probF),
+            expectedEndValue: (finalValueSuccess * probS) + (finalValueFailure * probF), // Giá trị kỳ vọng cuối kỳ (chưa chiết khấu)
             expectedNetPresentValue: expectedNetPresentValue,
         };
+    };
+
+    const handleNavigateToStep = (stepNumber: number) => {
+        // Cho phép quay lại các bước đã qua hoặc bước hiện tại
+        // Hoặc nếu đang ở bước kết quả (4), cho phép về các bước nhập liệu (1,2,3)
+        if (stepNumber < currentStep || (currentStep === 4 && stepNumber <= 3) || stepNumber === currentStep) {
+            // Nếu quay lại từ bước kết quả, có thể cân nhắc xóa kết quả cũ
+            if (currentStep === 4 && stepNumber < 4) {
+                setResultA(null);
+                setResultB(null);
+                setComparisonMessage('');
+            }
+            setCurrentStep(stepNumber);
+        }
     };
 
     const handleNextStep = () => {
@@ -386,21 +406,30 @@ const DecisionComparisonTool: React.FC = () => {
     };
 
     const handlePrevStep = () => {
+        if (currentStep === 4) { // Nếu từ kết quả quay lại, về bước 3
+             setResultA(null);
+             setResultB(null);
+             setComparisonMessage('');
+        }
         setCurrentStep(prev => Math.max(1, prev - 1));
     };
 
     const handleCompare = () => {
         setErrorMessages(prev => { const next = {...prev}; delete next.discountRate; return next; });
+        // Validate lại cả 2 option trước khi so sánh, phòng trường hợp người dùng quay lại sửa mà không qua nút Next
         let isValidA = validateOption(optionA, 'optionA');
         let isValidB = validateOption(optionB, 'optionB');
         let isValidDiscountRate = true;
         if (discountRate === undefined || discountRate < -100) {
-            setErrorMessages(prev => ({ ...prev, discountRate: "Tỷ lệ hoàn vốn không hợp lệ." }));
+            setErrorMessages(prev => ({ ...prev, discountRate: "Mức lời mong đợi mỗi năm không hợp lệ." }));
             isValidDiscountRate = false;
         }
 
         if (!isValidA || !isValidB || !isValidDiscountRate) {
-            setResultA(null); setResultB(null); setComparisonMessage('Vui lòng kiểm tra lại các thông tin đã nhập.'); return;
+            setResultA(null); setResultB(null); 
+            setComparisonMessage('Vui lòng kiểm tra lại các thông tin đã nhập ở các bước trước.'); 
+            setCurrentStep(isValidA ? (isValidB ? 3 : 2) : 1); // Điều hướng về bước có lỗi
+            return;
         }
 
         const resA = calculateENPV(optionA, discountRate);
@@ -413,16 +442,16 @@ const DecisionComparisonTool: React.FC = () => {
             const enpvA = resA.expectedNetPresentValue;
             const enpvB = resB.expectedNetPresentValue;
             if (Math.abs(enpvA - enpvB) < 0.01) {
-                 msg = `Cả hai lựa chọn có Lợi Ích Ròng Dự Kiến (ENPV) gần như tương đương (khoảng ${formatCurrency(enpvA)}). Hãy xem xét các yếu tố phi tài chính khác.`;
+                 msg = `Cả hai lựa chọn có "Ước Tính Lời/Lỗ Thực Tế" gần như tương đương (khoảng ${formatCurrency(enpvA)}). Hãy xem xét các yếu tố phi tài chính khác.`;
             } else if (enpvA > enpvB) {
-                msg = `Lựa chọn A ("${optionA.name}") có Lợi Ích Ròng Dự Kiến (ENPV) cao hơn. Chi phí cơ hội nếu chọn B là khoảng ${formatCurrency(enpvA - enpvB)}.`;
+                msg = `Lựa chọn A ("${optionA.name}") có "Ước Tính Lời/Lỗ Thực Tế" cao hơn. Nếu chọn B, bạn có thể bỏ lỡ khoảng ${formatCurrency(enpvA - enpvB)} lợi ích thực dự kiến từ A.`;
             } else {
-                msg = `Lựa chọn B ("${optionB.name}") có Lợi Ích Ròng Dự Kiến (ENPV) cao hơn. Chi phí cơ hội nếu chọn A là khoảng ${formatCurrency(enpvB - enpvA)}.`;
+                msg = `Lựa chọn B ("${optionB.name}") có "Ước Tính Lời/Lỗ Thực Tế" cao hơn. Nếu chọn A, bạn có thể bỏ lỡ khoảng ${formatCurrency(enpvB - enpvA)} lợi ích thực dự kiến từ B.`;
             }
             setComparisonMessage(msg);
             setCurrentStep(4);
         } else {
-             setComparisonMessage('Không thể tính toán do thiếu thông tin hoặc thông tin không hợp lệ ở các trường tính giá trị cuối kỳ.');
+             setComparisonMessage('Không thể tính toán do thiếu thông tin hoặc thông tin không hợp lệ.');
         }
     };
     
@@ -435,12 +464,15 @@ const DecisionComparisonTool: React.FC = () => {
     };
 
     const renderStepIndicator = () => (
-        <div className="flex justify-center space-x-2 sm:space-x-4 mb-8">
+        <div className="flex justify-center space-x-2 sm:space-x-4 mb-10">
             {[
                 { num: 1, label: "Lựa chọn A" }, { num: 2, label: "Lựa chọn B" },
-                { num: 3, label: "Tỷ lệ HV" }, { num: 4, label: "Kết quả" }
+                { num: 3, label: "Mức Lời Mong Đợi" }, { num: 4, label: "Kết Quả" } // Đổi tên bước 3
             ].map(stepInfo => (
-                <div key={stepInfo.num} className="flex flex-col items-center w-1/4 sm:w-auto">
+                <div key={stepInfo.num}
+                     className={`flex flex-col items-center w-1/4 sm:w-auto ${ (stepInfo.num < currentStep || (currentStep === 4 && stepInfo.num <=3) || stepInfo.num === currentStep ) ? 'cursor-pointer hover:opacity-80' : 'cursor-default opacity-50'}`}
+                     onClick={() => (stepInfo.num < currentStep || (currentStep === 4 && stepInfo.num <=3)) ? handleNavigateToStep(stepInfo.num) : undefined} // Cho phép click về các bước trước
+                >
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300
                         ${currentStep === stepInfo.num ? 'bg-purple-600 border-purple-600 text-white scale-110' : 
                          currentStep > stepInfo.num ? 'bg-green-500 border-green-500 text-white' : 
@@ -469,7 +501,27 @@ const DecisionComparisonTool: React.FC = () => {
         setOption: React.Dispatch<React.SetStateAction<DecisionOption>>,
         optionKey: OptionKey,
         title: string
-    ) => (
+    ) => {
+        let valueIfSuccessTooltip = `Tổng số tiền bạn ước tính sẽ có được vào cuối ${option.years} năm NẾU lựa chọn này THUẬN LỢI. Đây là giá trị tương lai, chưa trừ Vốn Đầu Tư Ban Đầu.`;
+        if (option.optionType === 'project_course') {
+            valueIfSuccessTooltip = `Với dự án/khóa học, hãy ước tính TỔNG LỢI ÍCH TÀI CHÍNH RÒNG (ví dụ: thu nhập tăng thêm sau khi trừ các chi phí liên quan nếu có, giá trị ước tính của doanh nghiệp/kỹ năng...) bạn nhận được sau ${option.years} năm, NẾU thành công. Con số này là giá trị tương lai, chưa trừ Vốn Đầu Tư Ban Đầu.`;
+        }
+
+        let valueIfFailureTooltip = `Tổng số tiền bạn ước tính sẽ còn lại (hoặc thu về được) vào cuối ${option.years} năm NẾU lựa chọn này KHÔNG THUẬN LỢI. Có thể là 0 nếu mất trắng.`;
+        if (option.optionType === 'project_course') {
+            valueIfFailureTooltip = `Nếu dự án/khóa học không mang lại lợi ích tài chính như kỳ vọng sau ${option.years} năm, giá trị thu về có thể là 0 VNĐ, hoặc số tiền bạn có thể thu hồi được từ tài sản còn lại của dự án (nếu có).`;
+        } else if (option.optionType === 'asset_growth') {
+            valueIfFailureTooltip = `Nếu thị trường diễn biến XẤU, bạn ước tính tài sản của mình (dựa trên % Vốn Gốc Còn Lại bạn nhập) sẽ có giá trị là bao nhiêu sau ${option.years} năm?`;
+        } else if (option.optionType === 'savings') {
+            valueIfFailureTooltip = `Với gửi tiết kiệm, trường hợp thất bại (rất hiếm) thường đồng nghĩa với việc bạn nhận lại được Vốn Đầu Tư Ban Đầu (do có bảo hiểm tiền gửi ở mức độ nhất định).`;
+        }
+        
+        // Phần JSX của renderOptionInputForm giữ nguyên cấu trúc như phiên bản trước,
+        // chỉ đảm bảo các tooltip đã được cập nhật và logic hiển thị lỗi đúng.
+        // ... (Copy phần JSX của renderOptionInputForm từ phản hồi trước vào đây) ...
+        // ... (Đã copy và tích hợp vào khối code lớn ở trên) ...
+        // Đảm bảo gọi đúng errorMessages[key]
+         return (
         <motion.div
             key={optionKey}
             initial={{ opacity: 0, x: (optionKey === 'optionA' && currentStep === 1) || (optionKey === 'optionB' && currentStep === 2) ? -50 : 0 }}
@@ -517,8 +569,8 @@ const DecisionComparisonTool: React.FC = () => {
             {option.optionType === 'asset_growth' && (
                 <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-700">
                     <h4 className="text-md font-semibold text-gray-600 dark:text-gray-400 mt-1 mb-3">Ước Tính Cho Đầu Tư Tăng Trưởng Tài Sản</h4>
-                    <InputField id={`${optionKey}_annualGrowthRateSuccess`} label="Tăng Trưởng Hàng Năm Ước Tính (Nếu Thành Công)" value={option.annualGrowthRateSuccess ?? 7} onChange={(val) => handleOptionChange(setOption, 'annualGrowthRateSuccess')(val)}
-                        icon={<TrendingUp size={20} className="text-green-500"/>} unit="%" placeholder="Ví dụ: 10" tooltip="Tỷ lệ % giá trị tài sản ước tính tăng lên mỗi năm NẾU kịch bản TỐT xảy ra." min={-50} max={100} step={0.1} isRequired/>
+                    <InputField id={`${optionKey}_annualGrowthRateSuccess`} label="Tăng Trưởng Hàng Năm Ước Tính (Nếu Thuận Lợi)" value={option.annualGrowthRateSuccess ?? 7} onChange={(val) => handleOptionChange(setOption, 'annualGrowthRateSuccess')(val)}
+                        icon={<TrendingUp size={20} className="text-green-500"/>} unit="%" placeholder="Ví dụ: 10" tooltip="Tỷ lệ % giá trị tài sản ước tính tăng lên mỗi năm NẾU kịch bản TỐT xảy ra. Công cụ sẽ dùng tỷ lệ này để tính giá trị cuối kỳ." min={-50} max={100} step={0.1} isRequired/>
                     {errorMessages[`${optionKey}_annualGrowthRateSuccess`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_annualGrowthRateSuccess`]}</p>}
                     
                     <div className="mb-4 text-right">
@@ -544,8 +596,8 @@ const DecisionComparisonTool: React.FC = () => {
                         </motion.div>
                     )}
                     
-                    <InputField id={`${optionKey}_valueRetentionFailure`} label="Giá Trị Vốn Gốc Còn Lại (Nếu Thất Bại)" value={option.valueRetentionFailure ?? 90} onChange={(val) => handleOptionChange(setOption, 'valueRetentionFailure')(val)}
-                        icon={<ShieldCheck size={20} className="text-orange-500"/>} unit="% Vốn Gốc" placeholder="Ví dụ: 80" tooltip="Nếu thị trường diễn biến XẤU, bạn ước tính tài sản của mình còn lại bao nhiêu PHẦN TRĂM so với vốn đầu tư ban đầu? (Ví dụ: 90% nghĩa là mất 10% vốn, 100% là huề vốn, 0% là mất trắng hoàn toàn)." min={0} max={200} step={1} isRequired/>
+                    <InputField id={`${optionKey}_valueRetentionFailure`} label="Giá Trị Vốn Gốc Còn Lại (Nếu Không Thuận Lợi)" value={option.valueRetentionFailure ?? 90} onChange={(val) => handleOptionChange(setOption, 'valueRetentionFailure')(val)}
+                        icon={<ShieldCheck size={20} className="text-orange-500"/>} unit="% Vốn Gốc" placeholder="Ví dụ: 80" tooltip="Nếu thị trường diễn biến XẤU, bạn ước tính tài sản của mình còn lại bao nhiêu PHẦN TRĂM so với vốn đầu tư ban đầu? (Ví dụ: 90% nghĩa là mất 10% vốn, 100% là huề vốn, 0% là mất trắng hoàn toàn). Công cụ sẽ dùng tỷ lệ này để tính giá trị cuối kỳ nếu không thuận lợi." min={0} max={200} step={1} isRequired/>
                     {errorMessages[`${optionKey}_valueRetentionFailure`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_valueRetentionFailure`]}</p>}
                     {/* Hiển thị lỗi _derived nếu có */}
                     {errorMessages[`${optionKey}_valueIfSuccess_derived`] && <p className="text-red-500 text-xs mt-1">{errorMessages[`${optionKey}_valueIfSuccess_derived`]}</p>}
@@ -555,32 +607,32 @@ const DecisionComparisonTool: React.FC = () => {
             {option.optionType === 'savings' && ( <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-700">
                 <h4 className="text-md font-semibold text-gray-600 dark:text-gray-400 mt-1 mb-3">Ước Tính Cho Gửi Tiết Kiệm</h4>
                     <InputField id={`${optionKey}_savingsInterestRate`} label="Lãi Suất Tiết Kiệm Hàng Năm" value={option.savingsInterestRate ?? 5} onChange={(val) => handleOptionChange(setOption, 'savingsInterestRate')(val)}
-                        icon={<PiggyBank size={20} className="text-blue-500"/>} unit="%" placeholder="Lãi suất ngân hàng" tooltip="Lãi suất tiết kiệm cố định hàng năm ngân hàng trả cho bạn. Với lựa chọn này, xác suất thành công thường rất cao (ví dụ 99.9%) và giá trị nếu thất bại thường là vốn gốc (do có bảo hiểm tiền gửi ở mức độ nhất định)." min={0} max={20} step={0.1} isRequired/>
+                        icon={<PiggyBank size={20} className="text-blue-500"/>} unit="%" placeholder="Lãi suất ngân hàng" tooltip="Lãi suất tiết kiệm cố định hàng năm ngân hàng trả cho bạn. Công cụ sẽ dùng lãi suất này để tính giá trị cuối kỳ. Với lựa chọn này, khả năng 'Thuận Lợi' xảy ra thường rất cao (ví dụ 99.9%) và giá trị nếu 'Không Thuận Lợi' thường là vốn gốc (do có bảo hiểm tiền gửi ở mức độ nhất định)." min={0} max={20} step={0.1} isRequired/>
                     {errorMessages[`${optionKey}_savingsInterestRate`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_savingsInterestRate`]}</p>}
                     {errorMessages[`${optionKey}_valueIfSuccess_derived`] && <p className="text-red-500 text-xs mt-1">{errorMessages[`${optionKey}_valueIfSuccess_derived`]}</p>}
             </div>)}
             {(option.optionType === 'project_course' || option.optionType === 'manual_entry') && ( <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-700">
                 <h4 className="text-md font-semibold text-gray-600 dark:text-gray-400 mt-1 mb-3">Ước Tính Thủ Công Giá Trị Cuối Kỳ</h4>
-                    <FormattedInputField id={`${optionKey}_valueIfSuccess`} label="Giá Trị Thu Về Cuối Kỳ (Nếu Thành Công)" value={option.valueIfSuccess} onValueChange={(val) => handleOptionChange(setOption, 'valueIfSuccess')(val)}
+                    <FormattedInputField id={`${optionKey}_valueIfSuccess`} label="Tổng Số Tiền Ước Tính Nhận Được Cuối Kỳ (Nếu Thuận Lợi)" value={option.valueIfSuccess} onValueChange={(val) => handleOptionChange(setOption, 'valueIfSuccess')(val)}
                         icon={<TrendingUp size={20} className="text-green-500" />} unit="VNĐ" placeholder="Tổng giá trị cuối kỳ"
-                        tooltip={option.optionType === 'project_course' ? "Với dự án/khóa học, hãy ước tính TỔNG LỢI ÍCH TÀI CHÍNH RÒNG (ví dụ: thu nhập tăng thêm sau khi trừ các chi phí liên quan nếu có, giá trị ước tính của doanh nghiệp/kỹ năng...) bạn nhận được sau thời gian xem xét, NẾU thành công." : "Tổng giá trị bạn dự kiến có được vào CUỐI KỲ XEM XÉT, NẾU lựa chọn này thành công."}
-                        isRequired/>
+                        tooltip={valueIfSuccessTooltip} isRequired/>
                     {errorMessages[`${optionKey}_valueIfSuccess_derived`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_valueIfSuccess_derived`]}</p>}
-                    <FormattedInputField id={`${optionKey}_valueIfFailure`} label="Giá Trị Thu Về Cuối Kỳ (Nếu Thất BẠI)" value={option.valueIfFailure} onValueChange={(val) => handleOptionChange(setOption, 'valueIfFailure')(val)}
+                    
+                    <FormattedInputField id={`${optionKey}_valueIfFailure`} label="Tổng Số Tiền Ước Tính Nhận Được Cuối Kỳ (Nếu Không Thuận Lợi)" value={option.valueIfFailure} onValueChange={(val) => handleOptionChange(setOption, 'valueIfFailure')(val)}
                         icon={<AlertTriangle size={20} className="text-red-500" />} unit="VNĐ" placeholder="Giá trị nếu không như ý"
-                        tooltip={option.optionType === 'project_course' ? "Nếu dự án/khóa học không mang lại lợi ích tài chính như kỳ vọng, giá trị thu về có thể là 0 (mất vốn đầu tư), hoặc một con số tượng trưng cho kinh nghiệm/kiến thức bạn có thể lượng hóa." : "Tổng giá trị bạn dự kiến có được vào CUỐI KỲ XEM XÉT, NẾU lựa chọn này thất bại."}
-                        isRequired/>
+                        tooltip={valueIfFailureTooltip} isRequired/>
                     {errorMessages[`${optionKey}_valueIfFailure_derived`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_valueIfFailure_derived`]}</p>}
             </div>)}
             <div className="mt-6 border-t dark:border-gray-700 pt-4">
-                <InputField id={`${optionKey}_probabilitySuccess`} label="Khả Năng Kịch Bản 'Thành Công' Xảy Ra" value={option.probabilitySuccess} onChange={(val) => handleOptionChange(setOption, 'probabilitySuccess')(val)}
+                <InputField id={`${optionKey}_probabilitySuccess`} label="Khả Năng Kịch Bản 'Thuận Lợi' Xảy Ra" value={option.probabilitySuccess} onChange={(val) => handleOptionChange(setOption, 'probabilitySuccess')(val)}
                     icon={<Target size={20} className="text-teal-500" />} unit="%" placeholder="0-100"
-                    tooltip="Ước tính của bạn về khả năng kịch bản 'Thành Công' (với các thông số giá trị bạn đã nhập ở trên) xảy ra (từ 0 đến 100%). Kịch bản 'Thất Bại' sẽ có xác suất là (100% - con số này)."
+                    tooltip="Bạn nghĩ cơ hội để lựa chọn này diễn ra tốt đẹp và mang lại kết quả 'Thuận Lợi' (với các thông số giá trị bạn đã nhập ở trên) là bao nhiêu phần trăm (từ 0 đến 100%)? Kịch bản 'Không Thuận Lợi' sẽ có khả năng xảy ra là (100% - con số này)."
                     min={0} max={100} step={1} isRequired/>
                 {errorMessages[`${optionKey}_probabilitySuccess`] && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages[`${optionKey}_probabilitySuccess`]}</p>}
             </div>
         </motion.div>
     );
+    };
     
     return (
         <div className="max-w-3xl mx-auto py-8 px-4 sm:px-0">
@@ -596,9 +648,9 @@ const DecisionComparisonTool: React.FC = () => {
                             <Percent size={24} className="mr-3 text-purple-500 dark:text-purple-400" />
                             Thông Số Chung Để So Sánh
                         </h3>
-                        <InputField id="discountRate" label="Tỷ Lệ Hoàn Vốn Mong Muốn Hàng Năm (Tỷ lệ chiết khấu)" value={discountRate} onChange={setDiscountRate}
+                        <InputField id="discountRate" label="Mức Lời Bạn Mong Đợi Mỗi Năm (Để So Sánh)" value={discountRate} onChange={setDiscountRate}
                             icon={<HelpCircle size={20} className="text-purple-500 dark:text-purple-400" />} unit="%" placeholder="Ví dụ: 7"
-                            tooltip="Đây là mức lợi nhuận TỐI THIỂU bạn kỳ vọng mỗi năm từ một khoản đầu tư có rủi ro tương đương. Hoặc có thể coi là lãi suất bạn có thể nhận được từ một lựa chọn đầu tư an toàn khác (như gửi tiết kiệm dài hạn). Con số này dùng để đánh giá giá trị 'thực' của các khoản tiền trong tương lai về thời điểm HIỆN TẠI."
+                            tooltip="Đây là mức lợi nhuận TỐI THIỂU bạn muốn có từ một khoản đầu tư tương tự trong một năm. Nếu bạn có thể gửi tiết kiệm được 6%/năm một cách an toàn, bạn có thể muốn một dự án rủi ro hơn phải mang lại nhiều hơn, ví dụ 10% hay 15%. Con số này giúp công cụ đánh giá xem lợi nhuận từ các lựa chọn của bạn trong tương lai thực sự 'đáng giá' bao nhiêu ở thời điểm hiện tại."
                             min={-20} max={100} step={0.1} isRequired
                         />
                         {errorMessages.discountRate && <p className="text-red-500 text-xs mt-[-15px] mb-[15px]">{errorMessages.discountRate}</p>}
@@ -622,19 +674,19 @@ const DecisionComparisonTool: React.FC = () => {
                                     <h4 className={`text-lg font-semibold ${item.textColor} mb-2`}>{item.option.name || item.title}</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Vốn đầu tư: {formatCurrency(item.option.initialInvestment)}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">Thời gian: {item.option.years} năm</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Giá trị nếu TC: {formatCurrency(terminal?.finalValueSuccess)} ({item.option.probabilitySuccess}%)</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Giá trị nếu TB: {formatCurrency(terminal?.finalValueFailure)} ({100-item.option.probabilitySuccess}%)</p>
-                                    <p className="font-bold mt-2 text-gray-800 dark:text-gray-100">Lợi Ích Ròng Dự Kiến (ENPV): <span className={item.highlightColor}>{formatCurrency(item.result?.expectedNetPresentValue)}</span></p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Giá trị nếu thuận lợi: {formatCurrency(terminal?.finalValueSuccess)} ({item.option.probabilitySuccess}%)</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Giá trị nếu không thuận lợi: {formatCurrency(terminal?.finalValueFailure)} ({100-item.option.probabilitySuccess}%)</p>
+                                    <p className="font-bold mt-2 text-gray-800 dark:text-gray-100">Ước Tính Lời/Lỗ Thực Tế (ENPV): <span className={item.highlightColor}>{formatCurrency(item.result.expectedNetPresentValue)}</span></p>
                                 </div>
                             )})}
                         </div>
                          <div className={`p-4 rounded-lg border text-center mt-4 ${
-                            Math.abs(resultA.expectedNetPresentValue - resultB.expectedNetPresentValue) < 0.01 ? 'bg-gray-100 dark:bg-gray-700/40 border-gray-300 dark:border-gray-600' :
-                            resultA.expectedNetPresentValue > resultB.expectedNetPresentValue ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600' :
+                            (resultA.expectedNetPresentValue && resultB.expectedNetPresentValue && Math.abs(resultA.expectedNetPresentValue - resultB.expectedNetPresentValue) < 0.01) ? 'bg-gray-100 dark:bg-gray-700/40 border-gray-300 dark:border-gray-600' :
+                            (resultA.expectedNetPresentValue > resultB.expectedNetPresentValue) ? 'bg-blue-50 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600' :
                             'bg-green-50 dark:bg-green-900/40 border-green-300 dark:border-green-600' 
                         }`}>
                             <h4 className="text-lg font-semibold mb-2 flex items-center justify-center text-gray-800 dark:text-gray-100">
-                                {Math.abs(resultA.expectedNetPresentValue - resultB.expectedNetPresentValue) < 0.01 ? <HelpCircle size={22} className="mr-2 text-gray-600 dark:text-gray-300"/> :
+                                {(resultA.expectedNetPresentValue && resultB.expectedNetPresentValue && Math.abs(resultA.expectedNetPresentValue - resultB.expectedNetPresentValue) < 0.01) ? <HelpCircle size={22} className="mr-2 text-gray-600 dark:text-gray-300"/> :
                                 (resultA.expectedNetPresentValue > resultB.expectedNetPresentValue ? <CheckCircle size={22} className="mr-2 text-blue-600 dark:text-blue-400"/> :
                                 <CheckCircle size={22} className="mr-2 text-green-600 dark:text-green-400"/>)
                                 } Gợi Ý Dựa Trên Phân Tích Tài Chính
@@ -654,10 +706,10 @@ const DecisionComparisonTool: React.FC = () => {
             <div className="mt-12 text-xs text-gray-500 dark:text-gray-400 max-w-3xl mx-auto">
               <p className='font-bold'>Lưu ý quan trọng:</p>
               <ul className="list-disc list-inside text-left mt-2 space-y-1 leading-relaxed">
-                <li>Công cụ này tính toán dựa trên các con số và ước tính do bạn cung cấp. Kết quả ("Lợi Ích Ròng Dự Kiến" - ENPV) là một chỉ số tham khảo.</li>
-                <li>"Tỷ Lệ Hoàn Vốn Mong Muốn" là một yếu tố quan trọng. Tỷ lệ này càng cao, các dự án có lợi nhuận xa trong tương lai hoặc rủi ro cao sẽ có ENPV thấp hơn.</li>
-                <li>Việc ước tính "Giá trị thu về" và "Xác suất thành công" là chủ quan. Hãy cố gắng đưa ra con số thực tế nhất.</li>
-                <li>Luôn xem xét các yếu tố phi tài chính (đam mê, kỹ năng, chiến lược, tác động xã hội) mà công cụ này không thể đo lường.</li>
+                <li>Công cụ này tính toán dựa trên các con số và ước tính do bạn cung cấp. Kết quả ("Ước Tính Lời/Lỗ Thực Tế" - ENPV) là một chỉ số tham khảo.</li>
+                <li>"Mức Lời Bạn Mong Đợi Mỗi Năm" là một yếu tố quan trọng. Tỷ lệ này càng cao, các dự án có lợi nhuận xa trong tương lai hoặc rủi ro cao sẽ có ENPV thấp hơn.</li>
+                <li>Việc ước tính các giá trị và xác suất là chủ quan. Hãy cố gắng đưa ra con số thực tế nhất có thể dựa trên thông tin và phân tích của bạn.</li>
+                <li>Luôn xem xét các yếu tố phi tài chính (đam mê, kỹ năng, chiến lược dài hạn, tác động xã hội...) mà công cụ này không thể đo lường.</li>
                 <li>Đây không phải là lời khuyên đầu tư. Hãy tìm hiểu kỹ hoặc tham vấn chuyên gia cho các quyết định tài chính quan trọng.</li>
               </ul>
             </div>
@@ -673,7 +725,7 @@ const LatteFactorPage: React.FC = () => {
         <div className="max-w-3xl mx-auto relative mb-8">
             <div className="relative flex items-center justify-center py-4">
                 <Link
-                  to="/"
+                  to="/" // Điều chỉnh link này về trang chủ nếu cần
                   className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors group py-2 pr-2 -ml-1 sm:ml-0"
                 >
                   <ArrowLeft size={18} className="mr-1.5 transition-transform group-hover:-translate-x-1" />
