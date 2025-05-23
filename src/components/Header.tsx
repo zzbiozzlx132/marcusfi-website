@@ -182,29 +182,14 @@ const Header: React.FC = () => {
   };
   const t = headerContent[language as keyof AppContentType] || headerContent.en;
 
-  const headerBaseClasses = "fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-[95%] sm:w-11/12 md:w-10/12 max-w-6xl";
-  // Khi menu mobile mở, header chính vẫn giữ hình dạng bo tròn nhưng nền và bóng sẽ trong suốt
-  const headerShapeClasses = isMenuOpen ? "rounded-t-2xl sm:rounded-2xl" : "rounded-full"; 
-  const headerBackdropBlurClasses = isMenuOpen ? "" : "backdrop-blur-xl"; 
-  
-  let headerEffectiveStyles = "";
-  if (isMenuOpen) {
-    // Khi menu mobile mở, thanh header chính trở nên trong suốt và không có bóng đổ/viền
-    headerEffectiveStyles = "bg-transparent shadow-none ring-0"; 
-  } else if (isScrolled || isAccountDropdownOpen || isToolsDropdownOpen) {
-    // Các trạng thái active khác (cuộn, dropdown desktop mở)
-    headerEffectiveStyles = "bg-white shadow-lg ring-1 ring-gray-200";
-  } else {
-    // Trạng thái inactive mặc định
-    headerEffectiveStyles = "bg-white/90 shadow-sm"; 
-  }
-
   return (
     <>
       <header
-        className={`${headerBaseClasses} ${headerShapeClasses} ${headerBackdropBlurClasses} ${headerEffectiveStyles}`}
+        className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-[95%] sm:w-11/12 md:w-10/12 max-w-6xl rounded-full backdrop-blur-xl ${
+          isScrolled || isMenuOpen || isAccountDropdownOpen || isToolsDropdownOpen ? 'bg-white/80 shadow-lg ring-1 ring-black ring-opacity-5' : 'bg-white/50'
+        }`}
       >
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3"> {/* Padding này vẫn giữ cho logo/nút X có khoảng cách */}
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3">
           <nav className="flex items-center justify-between">
             <Link to="/" className="flex items-center flex-shrink-0" onClick={closeAllPopups}>
               <BarChart3 className="h-7 w-7 text-[#6e00ff]" />
@@ -227,7 +212,7 @@ const Header: React.FC = () => {
                   <ChevronDown size={16} className={`ml-1.5 transition-transform duration-200 ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isToolsDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-64 origin-top-left bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-gray-200 focus:outline-none">
+                  <div className="absolute left-0 mt-2 w-64 origin-top-left bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <Link to="/timer-block" onClick={closeAllPopups} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#6e00ff] transition-colors">
                       <Clock size={16} className="mr-2.5 text-purple-500" /> {t.timerBlock}
                     </Link>
@@ -261,7 +246,6 @@ const Header: React.FC = () => {
               <Link to="/resources" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.resources}</Link>
             </div>
 
-            {/* Desktop Account & Language Switch */}
             <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
               <LanguageSwitch />
               <div className="relative" ref={accountDropdownRef}>
@@ -282,7 +266,7 @@ const Header: React.FC = () => {
                   )}
                 </button>
                 {isAccountDropdownOpen && (
-                   <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-gray-200 focus:outline-none">
+                  <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
                     {isAuthenticated ? (
                       <>
                         <div className="px-4 py-2 border-b border-gray-200">
@@ -324,7 +308,6 @@ const Header: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile Menu Toggle Button */}
             <button
               className="md:hidden text-gray-700 p-1 -mr-1 rounded-md hover:bg-gray-500/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#6e00ff]"
               onClick={toggleMobileMenu}
@@ -337,19 +320,20 @@ const Header: React.FC = () => {
             </button>
           </nav>
 
-          {/* Mobile Menu Content */}
           {isMenuOpen && (
-            <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white mt-3 rounded-2xl p-4 shadow-2xl ring-1 ring-gray-200"> 
+            <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-md mt-3 rounded-2xl p-4 shadow-2xl ring-1 ring-black ring-opacity-5">
               <div className="flex flex-col space-y-1">
                 <Link to="/" onClick={handleMobileLinkClick} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.home}</Link>
                 <Link to="/process" onClick={handleMobileLinkClick} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.process}</Link>
                 
                 <div className="border-t border-gray-200/60 my-2"></div>
+                {/* << THAY ĐỔI: Styling cho nút "Công cụ" trong mobile >> */}
                 <button
                   onClick={() => setIsMobileToolsOpen(!isMobileToolsOpen)}
                   className="flex items-center justify-between w-full px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5"
                   aria-expanded={isMobileToolsOpen}
                 >
+                  {/* Span này không còn class đặc biệt, sẽ kế thừa style của button */}
                   <span>{t.tools}</span> 
                   <ChevronDown size={18} className={`text-gray-500 group-hover:text-[#6e00ff] transition-transform duration-200 ${isMobileToolsOpen ? 'rotate-180' : ''}`} />
                 </button>
