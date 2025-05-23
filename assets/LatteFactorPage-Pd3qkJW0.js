@@ -1,0 +1,1 @@
+import{j as t}from"./index-BSox20yL.js";const e=()=>t.jsxs("div",{className:"p-4",children:[t.jsx("h1",{className:"text-2xl font-bold",children:'Công Cụ Tính Chi Phí Cơ Hội ("Latte Factor")'}),t.jsx("p",{children:"Nội dung trang đang được xây dựng."})]});export{e as default};
