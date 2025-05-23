@@ -44,7 +44,8 @@ const ResourcesPage: React.FC = () => {
   const t = underConstructionContent[language] || underConstructionContent.en;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-pink-50 to-orange-100 flex flex-col font-sans selection:bg-[#6e00ff] selection:text-white">
+    // << THAY ĐỔI CLASS NỀN Ở ĐÂY >>
+    <div className="min-h-screen bg-gradient-to-b from-white to-[#f8f0ff] flex flex-col font-sans selection:bg-[#6e00ff] selection:text-white">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 flex flex-col justify-center items-center text-center py-28 sm:py-32 md:py-36">
         <motion.div
@@ -73,17 +74,17 @@ const ResourcesPage: React.FC = () => {
                 <ListChecks size={20} className="mr-2"/>
                 <h3 className="text-sm sm:text-base font-semibold ">{t.tempResourcesLinkText}</h3>
             </div>
-            <motion.a // Thay Link bằng thẻ <a>
-              href={GOOGLE_SHEET_RESOURCES_LINK} // Sử dụng link trực tiếp
-              target="_blank" // Mở trong tab mới
-              rel="noopener noreferrer" // Quan trọng cho bảo mật và SEO khi mở link ngoài
+            <motion.a
+              href={GOOGLE_SHEET_RESOURCES_LINK}
+              target="_blank" 
+              rel="noopener noreferrer" 
               className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#6e00ff] to-[#8f00ff] hover:from-[#7a1aff] hover:to-[#9e00ff] text-white text-sm sm:text-base font-medium rounded-lg shadow-lg hover:shadow-[#8f00ff]/40 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6e00ff] focus:ring-offset-purple-50"
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
               <HardDriveDownload size={18} className="mr-2" />
               {t.accessTempResourcesButton}
-              <ExternalLink size={14} className="ml-2 opacity-70" /> {/* Icon báo hiệu link ngoài */}
+              <ExternalLink size={14} className="ml-2 opacity-70" />
             </motion.a>
           </div>
 

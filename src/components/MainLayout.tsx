@@ -8,13 +8,12 @@ import { LoadingSpinner } from '../App';
 const MainLayout: React.FC = () => {
   return (
     <div className="font-sans flex flex-col min-h-screen
-                   bg-gradient-to-b from-white to-[#f8f0ff] // Luôn sử dụng gradient nền sáng này
-                   /* XÓA BỎ HOẶC COMMENT LẠI DÒNG SAU ĐỂ KHÔNG ÁP DỤNG NỀN TỐI */
-                   /* dark:bg-gradient-to-b dark:from-slate-900 dark:to-[#1e1b2e] */
+                   bg-gradient-to-b from-white to-[#f8f0ff] // << Nền gradient sáng cho TOÀN BỘ MainLayout
                    selection:bg-purple-500 selection:text-white"
     >
       <Header />
-      <main className="flex-grow pt-16 sm:pt-20 md:pt-24">
+      {/* Xóa bg-lime-400 khỏi thẻ <main> để nó thừa hưởng nền từ div cha */}
+      <main className="flex-grow pt-16 sm:pt-20 md:pt-24"> 
         <Suspense fallback={<LoadingSpinner />}>
           <Outlet />
         </Suspense>

@@ -155,7 +155,7 @@ const Header: React.FC = () => {
   const handleLogout = () => { logout(); closeAllPopups(); };
 
   const headerContent: AppContentType = {
-    en: { 
+    en: { /* ...Nội dung không đổi... */ 
         home: 'Home', process: 'Process', blog: 'Blog', resources: 'Resources',
         tools: 'Tools', timerBlock: 'Timer Block', fiCalculator: 'FI Calculator', 
         simpleBudgetPlanner: 'Budget Planner',
@@ -167,7 +167,7 @@ const Header: React.FC = () => {
         signIn: 'Sign In', signUp: 'Sign Up', account: 'Account',
         dashboard: 'Dashboard', logout: 'Log Out'
     },
-    vi: { 
+    vi: { /* ...Nội dung không đổi... */ 
         home: 'Trang chủ', process: 'Quy trình', blog: 'Bài viết', resources: 'Tài nguyên',
         tools: 'Công cụ', timerBlock: 'Timer Block', fiCalculator: 'Máy tính FI',
         simpleBudgetPlanner: 'Kế hoạch Ngân sách',
@@ -182,14 +182,36 @@ const Header: React.FC = () => {
   };
   const t = headerContent[language as keyof AppContentType] || headerContent.en;
 
+  const headerBaseClasses = "fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-[95%] sm:w-11/12 md:w-10/12 max-w-6xl";
+  const headerShapeClasses = isMenuOpen ? "rounded-t-xl sm:rounded-xl" : "rounded-full";
+  
+  let headerConditionalStyles = "";
+  let headerEffectiveBackdropBlur = "backdrop-blur-xl"; // Mặc định có backdrop blur
+
+  if (isMenuOpen) {
+    // Khi menu mobile mở: header bar (chứa logo/X) có nền trắng đục, shadow nhẹ
+    // Bỏ backdrop-blur của header chính vì nó đã đục và menu con có thể có blur riêng.
+    headerConditionalStyles = "bg-white shadow-md";
+    headerEffectiveBackdropBlur = ""; 
+  } else if (isScrolled || isAccountDropdownOpen || isToolsDropdownOpen) {
+    // Khi cuộn hoặc mở dropdown desktop: header nền trắng đục, shadow và ring rõ ràng
+    headerConditionalStyles = "bg-white shadow-lg ring-1 ring-gray-200";
+    // Có thể giữ hoặc bỏ backdrop-blur ở đây. Nếu bg-white đã đục, hiệu ứng của nó lên header không rõ.
+    // headerEffectiveBackdropBlur = ""; // Hoặc giữ "backdrop-blur-xl"
+  } else {
+    // Trạng thái ban đầu, chưa cuộn, không có menu/dropdown nào mở: nền trong suốt, không shadow/ring
+    // Điều này giúp header "hòa" vào Hero section. Backdrop-blur quan trọng ở đây.
+    headerConditionalStyles = "bg-transparent shadow-none ring-0";
+  }
+
+  const headerInnerDivPadding = isMenuOpen ? "py-1.5 px-4 sm:px-6" : "py-2.5 sm:py-3 px-4 sm:px-6";
+
   return (
     <>
       <header
-        className={`fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-[95%] sm:w-11/12 md:w-10/12 max-w-6xl rounded-full backdrop-blur-xl ${
-          isScrolled || isMenuOpen || isAccountDropdownOpen || isToolsDropdownOpen ? 'bg-white/80 shadow-lg ring-1 ring-black ring-opacity-5' : 'bg-white/50'
-        }`}
+        className={`${headerBaseClasses} ${headerShapeClasses} ${headerEffectiveBackdropBlur} ${headerConditionalStyles}`}
       >
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3">
+        <div className={headerInnerDivPadding}>
           <nav className="flex items-center justify-between">
             <Link to="/" className="flex items-center flex-shrink-0" onClick={closeAllPopups}>
               <BarChart3 className="h-7 w-7 text-[#6e00ff]" />
@@ -198,6 +220,7 @@ const Header: React.FC = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
+              {/* Sử dụng lại hover effect ban đầu: hover:bg-gray-500/5 */}
               <Link to="/" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.home}</Link>
               <Link to="/process" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.process}</Link>
               
@@ -212,7 +235,8 @@ const Header: React.FC = () => {
                   <ChevronDown size={16} className={`ml-1.5 transition-transform duration-200 ${isToolsDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isToolsDropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-64 origin-top-left bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="absolute left-0 mt-2 w-64 origin-top-left bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-gray-200 focus:outline-none">
+                    {/* ... Các link công cụ ... */}
                     <Link to="/timer-block" onClick={closeAllPopups} className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-[#6e00ff] transition-colors">
                       <Clock size={16} className="mr-2.5 text-purple-500" /> {t.timerBlock}
                     </Link>
@@ -246,13 +270,14 @@ const Header: React.FC = () => {
               <Link to="/resources" onClick={closeAllPopups} className="px-3 py-2 text-gray-700 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-md hover:bg-gray-500/5">{t.resources}</Link>
             </div>
 
+            {/* Desktop Account & Language Switch */}
             <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
               <LanguageSwitch />
               <div className="relative" ref={accountDropdownRef}>
                 <button
                   onClick={toggleAccountDropdown}
                   disabled={isAuthLoading}
-                  className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-500/10 transition-colors disabled:opacity-50"
+                  className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-500/10 transition-colors disabled:opacity-50" /* Giữ lại hover effect này cho icon button */
                   aria-label={t.account}
                   aria-expanded={isAccountDropdownOpen}
                   aria-haspopup="true"
@@ -266,7 +291,8 @@ const Header: React.FC = () => {
                   )}
                 </button>
                 {isAccountDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                   <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white rounded-xl shadow-2xl py-2 z-20 ring-1 ring-gray-200 focus:outline-none">
+                    {/* ... Nội dung dropdown tài khoản ... */}
                     {isAuthenticated ? (
                       <>
                         <div className="px-4 py-2 border-b border-gray-200">
@@ -308,8 +334,9 @@ const Header: React.FC = () => {
               </div>
             </div>
 
+            {/* Mobile Menu Toggle Button */}
             <button
-              className="md:hidden text-gray-700 p-1 -mr-1 rounded-md hover:bg-gray-500/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#6e00ff]"
+              className="md:hidden text-gray-700 p-1 -mr-1 rounded-md hover:bg-gray-500/10 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#6e00ff]" /* Giữ lại hover effect này */
               onClick={toggleMobileMenu}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
@@ -320,26 +347,27 @@ const Header: React.FC = () => {
             </button>
           </nav>
 
+          {/* Mobile Menu Content */}
           {isMenuOpen && (
-            <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-md mt-3 rounded-2xl p-4 shadow-2xl ring-1 ring-black ring-opacity-5">
+            <div id="mobile-menu" ref={mobileMenuRef} className="md:hidden bg-white mt-1.5 rounded-2xl p-4 shadow-2xl ring-1 ring-gray-200"> 
               <div className="flex flex-col space-y-1">
+                {/* Sử dụng lại hover effect ban đầu: hover:bg-gray-500/5 */}
                 <Link to="/" onClick={handleMobileLinkClick} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.home}</Link>
                 <Link to="/process" onClick={handleMobileLinkClick} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.process}</Link>
                 
                 <div className="border-t border-gray-200/60 my-2"></div>
-                {/* << THAY ĐỔI: Styling cho nút "Công cụ" trong mobile >> */}
                 <button
                   onClick={() => setIsMobileToolsOpen(!isMobileToolsOpen)}
                   className="flex items-center justify-between w-full px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5"
                   aria-expanded={isMobileToolsOpen}
                 >
-                  {/* Span này không còn class đặc biệt, sẽ kế thừa style của button */}
                   <span>{t.tools}</span> 
                   <ChevronDown size={18} className={`text-gray-500 group-hover:text-[#6e00ff] transition-transform duration-200 ${isMobileToolsOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isMobileToolsOpen && (
                   <div className="pl-3 mt-1 space-y-1">
+                     {/* ... Các link công cụ trong mobile menu ... */}
                      <Link to="/timer-block" onClick={handleMobileLinkClick} className="flex items-center px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">
                         <Clock size={16} className="mr-3 text-purple-500" /> {t.timerBlock}
                      </Link>
@@ -373,6 +401,7 @@ const Header: React.FC = () => {
                 <Link to="/resources" onClick={handleMobileLinkClick} className="block px-3 py-2.5 text-gray-800 hover:text-[#6e00ff] transition-colors text-sm font-medium rounded-lg hover:bg-gray-500/5">{t.resources}</Link>
 
                 <div className="border-t border-gray-200/80 pt-3 mt-2 space-y-2.5">
+                 {/* ... Phần tài khoản/đăng nhập ... */}
                   {isAuthenticated ? (
                      <>
                         <div className="px-3 py-2 text-center">

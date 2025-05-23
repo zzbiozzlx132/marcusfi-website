@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../contexts/LanguageContext';
 
-// --- Định nghĩa Interfaces ---
+// --- Định nghĩa Interfaces (Giữ nguyên như bạn đã cung cấp) ---
 interface MediaFormat {
-  ext?: string; // Các trường này có thể không luôn có mặt đầy đủ trong mọi format object
-  url: string;  // url là quan trọng nhất
+  ext?: string;
+  url: string;
   hash?: string;
   mime?: string;
   name?: string;
@@ -17,29 +17,26 @@ interface MediaFormat {
   height?: number;
   sizeInBytes?: number;
 }
-
-// Định nghĩa các key có thể có trong formats
 type FormatKey = 'large' | 'small' | 'medium' | 'thumbnail';
-
 interface DirectMediaAttributes {
   id: number;
   documentId?: string;
   name: string;
   alternativeText?: string | null;
   caption?: string | null;
-  width?: number; // Width ở cấp độ gốc của media
-  height?: number; // Height ở cấp độ gốc của media
-  formats?: { // formats là optional
+  width?: number;
+  height?: number;
+  formats?: {
     large?: MediaFormat;
     small?: MediaFormat;
     medium?: MediaFormat;
     thumbnail?: MediaFormat;
-  } | null; // formats có thể là null hoặc undefined
+  } | null;
   hash: string;
   ext: string;
   mime: string;
   size: number;
-  url: string; // URL chính, luôn phải có nếu media tồn tại
+  url: string;
   previewUrl?: string | null;
   provider: string;
   provider_metadata?: any | null;
@@ -47,15 +44,10 @@ interface DirectMediaAttributes {
   updatedAt: string;
   publishedAt?: string;
 }
-
-// Interface này dùng cho các trường media lồng nhau (ví dụ author.avatar)
-// Giả sử chúng có cấu trúc data.attributes
-interface NestedPopulatedMediaAttributes extends DirectMediaAttributes {} // Kế thừa cho đơn giản, hoặc định nghĩa riêng nếu khác
+interface NestedPopulatedMediaAttributes extends DirectMediaAttributes {}
 interface PopulatedMedia {
   data?: { id: number; attributes: NestedPopulatedMediaAttributes; } | null;
 }
-
-
 interface AuthorAttributes {
   name: string; email?: string; createdAt: string; updatedAt: string; publishedAt: string;
   avatar?: PopulatedMedia;
@@ -63,7 +55,6 @@ interface AuthorAttributes {
 interface PopulatedAuthor {
   data?: { id: number; attributes: AuthorAttributes; } | null;
 }
-
 interface CategoryAttributes {
   name: string; slug: string; description?: string | null;
   createdAt: string; updatedAt: string; publishedAt: string;
@@ -71,13 +62,11 @@ interface CategoryAttributes {
 interface PopulatedCategory {
   data?: { id: number; attributes: CategoryAttributes; } | null;
 }
-
 interface RichTextBlock { __component: "shared.rich-text"; id: number; body: string; }
 interface QuoteBlock { __component: "shared.quote"; id: number; title?: string; body: string; }
 interface MediaBlockInDynamicZone { __component: "shared.media"; id: number; /* file?: PopulatedMedia; */ }
 interface SliderBlock { __component: "shared.slider"; id: number; /* files?: PopulatedMedia[]; */ }
 type BlockComponent = RichTextBlock | QuoteBlock | MediaBlockInDynamicZone | SliderBlock;
-
 interface Article {
   id: number; documentId?: string; title: string; description: string; slug: string;
   createdAt: string; updatedAt: string; publishedAt: string;
@@ -112,10 +101,6 @@ const BlogListPage: React.FC = () => {
         const response = await axios.get<{ data: Article[] }>(apiUrl);
 
         if (response.data && Array.isArray(response.data.data)) {
-          // Log để kiểm tra cấu trúc của cover một lần nữa nếu cần
-          // if (response.data.data.length > 0 && response.data.data[0].cover) {
-          //   console.log("BlogListPage: Cấu trúc của article.cover[0]:", response.data.data[0].cover);
-          // }
           setArticles(response.data.data);
         } else {
           setArticles([]); setError("Invalid data structure.");
@@ -131,10 +116,25 @@ const BlogListPage: React.FC = () => {
 
   if (loading) return <div className="text-center py-20">Loading posts...</div>;
   if (error) return <div className="text-center py-20 text-red-600">{error}</div>;
-  if (articles.length === 0 && !loading) { // Thêm !loading để chỉ hiển thị khi đã fetch xong và không có bài
+  
+  const getStrapiMediaURL = (
+    mediaAttributes: DirectMediaAttributes | undefined | null,
+    formatKey?: FormatKey
+  ): string | undefined => {
+    if (!mediaAttributes) {
+      return undefined;
+    }
+    if (formatKey && mediaAttributes.formats && mediaAttributes.formats[formatKey]?.url) {
+      return mediaAttributes.formats[formatKey]?.url;
+    }
+    return mediaAttributes.url;
+  };
+
+  if (articles.length === 0 && !loading) {
     return (
       <>
-        <section className="py-12 bg-gray-50 sm:py-16 lg:py-20">
+        {/* << THAY ĐỔI: Xóa class bg-gray-50 >> */}
+        <section className="py-12 sm:py-16 lg:py-20">
           <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div className="text-center mb-12 sm:mb-16">
               <h2 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl xl:text-5xl">{t.title}</h2>
@@ -147,29 +147,10 @@ const BlogListPage: React.FC = () => {
     );
   }
 
-  // Sửa lại hàm getStrapiMediaURL
-  const getStrapiMediaURL = (
-    mediaAttributes: DirectMediaAttributes | undefined | null,
-    formatKey?: FormatKey // formatKey giờ là một string cụ thể hoặc undefined
-  ): string | undefined => {
-    if (!mediaAttributes) {
-      return undefined;
-    }
-
-    // Ưu tiên format được yêu cầu nếu có và tồn tại
-    if (formatKey && mediaAttributes.formats && mediaAttributes.formats[formatKey]?.url) {
-      return mediaAttributes.formats[formatKey]?.url;
-    }
-
-    // Nếu không có format cụ thể hoặc format không tồn tại, trả về url chính
-    return mediaAttributes.url;
-  };
-
-
   return (
     <>
-      {/* <PageHeader titleText={t.title} subtitleText={t.subtitle} /> */}
-      <section className="py-12 bg-gray-50 sm:py-16 lg:py-20">
+      {/* << THAY ĐỔI: Xóa class bg-gray-50 >> */}
+      <section className="py-12 sm:py-16 lg:py-20">
         <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-3xl font-bold leading-tight text-gray-900 sm:text-4xl xl:text-5xl">{t.title}</h2>
@@ -178,7 +159,7 @@ const BlogListPage: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-8 sm:gap-10 md:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => {
-              const imageUrl = getStrapiMediaURL(article.cover, 'medium'); // Lấy format 'medium'
+              const imageUrl = getStrapiMediaURL(article.cover, 'medium');
               const imageAlt = article.cover?.alternativeText || article.title || 'Blog post image';
 
               return (
