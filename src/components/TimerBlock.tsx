@@ -1,6 +1,6 @@
 // src/components/TimerBlock.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, /* BellRing, */ ChevronDown, X as XIcon, Trash2, Volume2, Save, XCircle } from 'lucide-react'; // Removed BellRing
+import { Play, Pause, RotateCcw, SkipForward, Plus, Check, Clock, ListChecks, Settings as SettingsIcon, ChevronDown, X as XIcon, Trash2, Volume2, Save, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Task {
@@ -61,7 +61,6 @@ interface TimerBlockProps {
   setIsPageInFocusMode: (isFocus: boolean) => void;
 }
 
-// Specific type for items in the timeInputFields array
 interface TimeInputFieldItem {
     label: string;
     field: 'workDuration' | 'shortBreakDuration' | 'longBreakDuration';
@@ -95,7 +94,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     } else if ( (field === 'workDuration' || field === 'shortBreakDuration' || field === 'longBreakDuration' || field === 'cyclesBeforeLongBreak') && typeof processedValue === 'number' ) {
       processedValue = Math.max(1, processedValue);
     }
-    // For boolean fields, processedValue remains boolean. For string fields, it remains string.
     setSettingsData(prev => ({ ...prev, [field]: processedValue }));
   };
 
@@ -140,7 +138,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
         </div>
         
         <div className="space-y-4">
-            {/* Timer Durations Section */}
             <div>
               <div className="flex items-center text-gray-500 dark:text-gray-400 mb-1">
                 <Clock size={16} className="mr-1.5" />
@@ -148,14 +145,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
               </div>
               <label className="block text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1.5">Time (minutes)</label>
               <div className="grid grid-cols-3 gap-x-3">
-                {timeInputFields.map((item: TimeInputFieldItem) => ( // Explicitly type item here
+                {timeInputFields.map((item: TimeInputFieldItem) => (
                     <div key={item.field}>
                         <label htmlFor={item.field} className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">{item.label}</label>
                         <input 
                             type="number" 
                             id={item.field}
                             min="1" 
-                            value={settingsData[item.field]} // This should now be fine as settingsData[item.field] is number
+                            value={settingsData[item.field]}
                             onChange={(e) => handleChange(item.field, e.target.value)}
                             className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-center"
                         />
@@ -164,7 +161,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
               </div>
             </div>
             
-            {/* Notification Sound - Moved Up */}
             <div>
               <label htmlFor="notificationSound" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Âm thanh thông báo</label>
               <div className="flex items-center space-x-2">
@@ -188,7 +184,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
               </div>
             </div>
 
-            {/* Cycles before long break & Alarm repeat - In one row */}
             <div className="grid grid-cols-2 gap-x-3">
                 <div>
                     <label htmlFor="cyclesBeforeLongBreak" className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Chu kỳ / Nghỉ dài</label>
@@ -204,7 +199,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
                 </div>
             </div>
             
-            {/* Checkboxes */}
             <div className="flex items-center justify-between pt-2 space-x-4">
                 <div className="flex items-center">
                     <input type="checkbox" id="modalIncludeMusic" checked={settingsData.includeMusic}
@@ -230,10 +224,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentS
     </motion.div>
   );
 };
-
-
-// ... (The rest of your TimerBlock component, ConfirmTaskActionModal, and TimerBlock implementation remains the same)
-// Make sure to include the rest of the TimerBlock.tsx content here. For brevity, I'm only showing the changed SettingsModal and related types/constants.
 
 interface ConfirmTaskActionModalProps {
     isOpen: boolean;
@@ -320,7 +310,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
             let validStatus: Task['status'] = 'in_progress';
             if (task.status === 'in_progress' || task.status === 'completed') {
               validStatus = task.status;
-            } else if (task.status === 'hidden') { // Legacy status mapping
+            } else if (task.status === 'hidden') { // Example of handling legacy or other statuses
               validStatus = 'completed';
             }
             return {
@@ -381,15 +371,6 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     localStorage.setItem('timerSettings_v2', JSON.stringify(settings));
   }, [settings]);
 
-  useEffect(() => {
-    if (!isRunning) { 
-      let newFullDuration;
-      if (currentMode === 'work') newFullDuration = settings.workDuration * 60;
-      else if (currentMode === 'short_break') newFullDuration = settings.shortBreakDuration * 60;
-      else newFullDuration = settings.longBreakDuration * 60;
-      setTimeLeft(newFullDuration);
-    }
-  }, [currentMode, settings.workDuration, settings.shortBreakDuration, settings.longBreakDuration, settings.cyclesBeforeLongBreak, isRunning]);
 
   useEffect(() => { localStorage.setItem('timerTasks_v2', JSON.stringify(tasks)); }, [tasks]);
   useEffect(() => {
@@ -410,6 +391,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
         if (notificationSoundAudioRef.current.src !== soundUrl) {
             notificationSoundAudioRef.current.src = soundUrl;
+            notificationSoundAudioRef.current.load(); // Ensure loading new sound
         }
     }
   }, [settings.selectedNotificationSound]);
@@ -417,40 +399,51 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
 
   const playNotificationSound = useCallback(() => {
     if (!notificationSoundAudioRef.current || settings.alarmSoundRepeat <= 0) {
+      console.log("[Notification] Skipped: No audio element or repeat count is zero.");
       return;
     }
     const audio = notificationSoundAudioRef.current;
     const soundUrl = new URL(settings.selectedNotificationSound, window.location.origin).href;
     
+    // Ensure src is correct
     if (audio.src !== soundUrl) {
       audio.src = soundUrl;
+      audio.load(); // Load if src changed
     }
 
     alarmPlayedCountRef.current = 0; 
-    
+    // console.log(`[Notification] Starting. Target repeats: ${settings.alarmSoundRepeat}`);
+
     const playCurrentSequence = () => {
+      // console.log(`[Notification] playCurrentSequence. Played count: ${alarmPlayedCountRef.current}, Target: ${settings.alarmSoundRepeat}`);
       if (alarmPlayedCountRef.current < settings.alarmSoundRepeat) {
+        audio.pause(); // FIX ISSUE 2: Ensure paused before reset
         audio.currentTime = 0;
         audio.play()
+          .then(() => {
+            // console.log(`[Notification] Play #${alarmPlayedCountRef.current + 1} started.`);
+          })
           .catch(e => {
-            console.error("[Notification] Lỗi phát âm báo:", e.name, e.message);
+            console.error("[Notification] Lỗi phát âm báo:", e.name, e.message, `(Attempt: ${alarmPlayedCountRef.current + 1})`);
             audio.removeEventListener('ended', onEndedHandler); 
           });
       } else {
+        // console.log("[Notification] Finished all repeats.");
         audio.removeEventListener('ended', onEndedHandler); 
       }
     };
 
     const onEndedHandler = () => {
       alarmPlayedCountRef.current++; 
+      // console.log(`[Notification] Sound ended. Count incremented to: ${alarmPlayedCountRef.current}`);
       playCurrentSequence(); 
     };
 
     audio.removeEventListener('ended', onEndedHandler); 
     audio.addEventListener('ended', onEndedHandler);
     
-    playCurrentSequence(); 
-  }, [settings.selectedNotificationSound, settings.alarmSoundRepeat]);
+    playCurrentSequence(); // Start the first play
+  }, [settings.selectedNotificationSound, settings.alarmSoundRepeat]); // settings.alarmSoundRepeat is crucial here
 
   const handleCycleComplete = useCallback(() => {
     playNotificationSound();
@@ -459,6 +452,8 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     }
     let nextMode: 'work' | 'short_break' | 'long_break';
     let newCycleCountForState = cycleCount;
+    let nextDuration; 
+
     if (currentMode === 'work') {
       if (activeTaskId) {
         setTasks((prevTasks): Task[] => prevTasks.map((task) =>
@@ -469,21 +464,27 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
       }
       newCycleCountForState = cycleCount + 1;
       if (newCycleCountForState >= settings.cyclesBeforeLongBreak) {
-        nextMode = 'long_break'; setCycleCount(0);
+        nextMode = 'long_break';
+        nextDuration = settings.longBreakDuration * 60; 
+        setCycleCount(0);
       } else {
-        nextMode = 'short_break'; setCycleCount(newCycleCountForState);
+        nextMode = 'short_break';
+        nextDuration = settings.shortBreakDuration * 60;
+        setCycleCount(newCycleCountForState);
       }
       if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
         new Notification('Đến giờ giải lao rồi!', { body: `Hãy đứng dậy, di chuyển hoặc thư giãn một chút nhé. ${nextMode === 'short_break' ? 'Nghỉ ngắn' : 'Nghỉ dài'} sắp bắt đầu.`, icon: '/marcusfi-website/favicon.ico'});
       } else if (typeof Notification !== 'undefined' && Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => { if (permission === "granted") { new Notification('Đến giờ giải lao rồi!', { body: `Hãy đứng dậy, di chuyển hoặc thư giãn một chút nhé. ${nextMode === 'short_break' ? 'Nghỉ ngắn' : 'Nghỉ dài'} sắp bắt đầu.`, icon: '/marcusfi-website/favicon.ico'});}});
       }
-    } else {
+    } else { 
       nextMode = 'work';
+      nextDuration = settings.workDuration * 60; 
     }
     setIsRunning(false); 
     setCurrentMode(nextMode); 
-  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]); // settings should be enough here
+    setTimeLeft(nextDuration); 
+  }, [activeTaskId, cycleCount, settings, playNotificationSound, currentMode, setTasks]);
 
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
@@ -506,11 +507,14 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   useEffect(() => {
     const audio = backgroundMusicAudioRef.current;
     if (!audio) return;
+
     const handleMusicEnded = () => {
       const nextTrackIndex = (settings.currentMusicTrackIndex + 1) % BACKGROUND_MUSIC_TRACKS.length;
       setSettings(prev => ({ ...prev, currentMusicTrackIndex: nextTrackIndex }));
+      // When music ends and a new track is set, if timer is still running, play the new track
+      // This part will be handled by the main body of this useEffect when settings.currentMusicTrackIndex changes
     };
-    audio.removeEventListener('ended', handleMusicEnded);
+    audio.removeEventListener('ended', handleMusicEnded); // Clean up previous
     audio.addEventListener('ended', handleMusicEnded);
 
     if (settings.includeMusic && currentMode === 'work') {
@@ -520,17 +524,29 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         return;
       }
       const newSrc = new URL(currentTrackObject.src, window.location.origin).href;
+      let srcChanged = false;
       if (audio.src !== newSrc) {
         audio.src = newSrc; 
-        audio.load(); // Important to load new src
+        audio.load(); 
+        srcChanged = true;
       }
-      if (isRunning && audio.paused) {
-        // Delay play slightly after src change if needed, or ensure it's playable
-        audio.play().catch(e => console.error("Lỗi phát nhạc nền:", e.name, e.message));
-      } else if (!isRunning && !audio.paused) {
-        audio.pause();
+
+      if (isRunning) {
+        // FIX ISSUE 1: If src changed, we want to play. If not changed but paused, also play.
+        if (srcChanged || audio.paused) {
+            // Delay play slightly if src just changed to give load() time,
+            // or play immediately if src is same and it's just paused.
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => console.error("Lỗi phát nhạc nền (useEffect):", e.name, e.message));
+            }
+        }
+      } else { // Not running
+        if (!audio.paused) {
+          audio.pause();
+        }
       }
-    } else {
+    } else { // Music not included or not in work mode
       if (!audio.paused) {
         audio.pause();
       }
@@ -538,13 +554,16 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     return () => {
       audio.removeEventListener('ended', handleMusicEnded);
     };
-  }, [isRunning, currentMode, settings.includeMusic, settings.currentMusicTrackIndex, setSettings]); // Added setSettings
+  // Removed setSettings from dependency array to avoid potential loops if not careful.
+  // It's updated via handleMusicEnded callback, which is fine.
+  }, [isRunning, currentMode, settings.includeMusic, settings.currentMusicTrackIndex]);
+
 
   const handleStart = () => {
     if (currentMode === 'work' && !activeTaskId) {
       alert("Vui lòng chọn một công việc để bắt đầu phiên làm việc."); return;
     }
-    if (timeLeft === 0) {
+    if (timeLeft === 0) { 
         let newTime;
         if (currentMode === 'work') newTime = settings.workDuration * 60;
         else if (currentMode === 'short_break') newTime = settings.shortBreakDuration * 60;
@@ -553,50 +572,74 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     }
 
     if (!initialUserInteractionRef.current) {
+        // Unlock notification sound
         if (notificationSoundAudioRef.current) {
             const audioNtf = notificationSoundAudioRef.current;
             if (!audioNtf.src && settings.selectedNotificationSound) {
                  audioNtf.src = new URL(settings.selectedNotificationSound, window.location.origin).href;
+                 audioNtf.load();
             }
-            if(audioNtf.src){ 
+            if(audioNtf.src && audioNtf.readyState >= 2){ // Ensure it's ready to play
                 const wasMuted = audioNtf.muted;
                 audioNtf.muted = true; 
                 audioNtf.play()
-                .then(() => {
-                    audioNtf.pause();
-                    audioNtf.currentTime = 0;
-                    audioNtf.muted = wasMuted; 
-                })
-                .catch(() => { // Mark err as unused or log it
-                    audioNtf.muted = wasMuted;
-                });
+                .then(() => { audioNtf.pause(); audioNtf.currentTime = 0; audioNtf.muted = wasMuted; })
+                .catch(() => { audioNtf.muted = wasMuted; });
             }
         }
+        // Unlock background music
          if (backgroundMusicAudioRef.current && settings.includeMusic) {
             const audioBg = backgroundMusicAudioRef.current;
-             if (!audioBg.src && BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex]) {
-                 audioBg.src = new URL(BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex].src, window.location.origin).href;
+            const currentTrackObject = BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex];
+             if (currentTrackObject && !audioBg.src) { // Set src if not already set
+                 audioBg.src = new URL(currentTrackObject.src, window.location.origin).href;
+                 audioBg.load();
              }
-            if(audioBg.src){
+            if(audioBg.src && audioBg.readyState >= 2){ // Ensure it's ready
                 const wasMuted = audioBg.muted;
                 audioBg.muted = true;
                 audioBg.play()
-                .then(() => {
-                    audioBg.pause();
-                    audioBg.currentTime = 0;
-                    audioBg.muted = wasMuted;
-                })
-                .catch(() => { // Mark err as unused or log it
-                    audioBg.muted = wasMuted;
-                });
+                .then(() => { audioBg.pause(); audioBg.currentTime = 0; audioBg.muted = wasMuted;})
+                .catch(() => { audioBg.muted = wasMuted;});
             }
         }
         initialUserInteractionRef.current = true;
     }
+    
+    // FIX ISSUE 1: Explicitly handle music play on start if conditions are met
+    if (settings.includeMusic && currentMode === 'work' && backgroundMusicAudioRef.current) {
+        const audioBg = backgroundMusicAudioRef.current;
+        const currentTrackObject = BACKGROUND_MUSIC_TRACKS[settings.currentMusicTrackIndex];
+        
+        if (currentTrackObject) {
+            const newSrc = new URL(currentTrackObject.src, window.location.origin).href;
+            if (audioBg.src !== newSrc) {
+                audioBg.src = newSrc;
+                audioBg.load(); // Load the new track
+                 // Play after a short delay to allow loading if src changed
+                setTimeout(() => {
+                    const playPromise = audioBg.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => console.error("Lỗi phát nhạc nền (handleStart, src changed):", e.name, e.message));
+                    }
+                }, 100); // 100ms delay, adjust if needed
+            } else if (audioBg.paused) { // If src is correct and it's just paused
+                const playPromise = audioBg.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.error("Lỗi phát nhạc nền (handleStart, paused):", e.name, e.message));
+                }
+            }
+        }
+    }
     setIsRunning(true);
   };
+
   const handlePause = () => {
     setIsRunning(false);
+    // FIX ISSUE 1: Ensure music pauses when timer pauses
+    if (backgroundMusicAudioRef.current && !backgroundMusicAudioRef.current.paused) {
+        backgroundMusicAudioRef.current.pause();
+    }
   };
   const handleReset = () => {
     setIsRunning(false); 
@@ -605,11 +648,19 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     else if (currentMode === 'short_break') newTime = settings.shortBreakDuration * 60;
     else newTime = settings.longBreakDuration * 60;
     setTimeLeft(newTime); 
+    // Stop music on reset
+    if (backgroundMusicAudioRef.current && !backgroundMusicAudioRef.current.paused) {
+        backgroundMusicAudioRef.current.pause();
+        // Optionally reset music to start of track if desired
+        // backgroundMusicAudioRef.current.currentTime = 0;
+    }
   };
   const handleSkipBreak = () => {
     if (currentMode !== 'work') {
       setIsRunning(false); 
       setCurrentMode('work'); 
+      setTimeLeft(settings.workDuration * 60); 
+      // Music will be handled by useEffect based on new mode and isRunning state change, or by handleStart if user starts it.
     }
   };
 
@@ -630,9 +681,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     if (statusOrder[a.status] !== statusOrder[b.status]) {
         return statusOrder[a.status] - statusOrder[b.status];
     }
-    // Optional: Sort by name or another criteria if statuses are the same
-    // return a.name.localeCompare(b.name); 
-    return 0;
+    return 0; 
   };
 
   const toggleTaskStatus = (taskId: string) => {
@@ -643,7 +692,7 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     } else if (taskToUpdate.status === 'completed') {
         setTasks((prevTasks): Task[] =>
             prevTasks.map((task): Task =>
-                task.id === taskId ? { ...task, status: 'in_progress' } : task // Optionally reset cyclesCompleted: 0
+                task.id === taskId ? { ...task, status: 'in_progress' } : task
             ).sort(taskSortLogic)
         );
     }
@@ -655,7 +704,12 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         prev.map((t): Task => t.id === taskToConfirm.id ? { ...t, status: 'completed' } : t)
             .sort(taskSortLogic)
       );
-      if (activeTaskId === taskToConfirm.id) setActiveTaskId(null);
+      if (activeTaskId === taskToConfirm.id) {
+          setActiveTaskId(null);
+          if (isRunning && currentMode === 'work') { // If active task is completed while timer is running for it
+              handlePause(); // Pause the timer
+          }
+      }
       setTaskToConfirm(null);
     }
   };
@@ -663,7 +717,12 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
   const handleDeleteTaskPermanently = () => {
     if (taskToConfirm) {
       setTasks(prev => prev.filter(t => t.id !== taskToConfirm.id));
-      if (activeTaskId === taskToConfirm.id) setActiveTaskId(null);
+      if (activeTaskId === taskToConfirm.id) {
+          setActiveTaskId(null);
+           if (isRunning && currentMode === 'work') { // If active task is deleted while timer is running for it
+              handlePause(); // Pause the timer
+          }
+      }
       setTaskToConfirm(null);
     }
   };
@@ -680,32 +739,36 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
     const cyclesNeeded = task.estimatedCycles - cyclesAlreadyDoneForThisTask;
     if (cyclesNeeded <= 0) return "Sắp xong!";
     let totalMinutesRequired = 0;
-    let currentPomodoroCycleCount = cycleCount;
+    let currentPomodoroCycleCount = cycleCount; // This should reflect pomodoros within the current long break cycle
     
-    let initialTimeOffset = 0;
+    // Adjust for time already passed in current work session if this task is active
+    let initialTimeOffsetMinutes = 0;
     if (activeTaskId === task.id && currentMode === 'work' && isRunning) {
-        initialTimeOffset = (settings.workDuration * 60 - timeLeft) / 60; 
-        if (initialTimeOffset >= settings.workDuration && settings.workDuration > 0) { // Cap offset
-            initialTimeOffset = settings.workDuration - (1/60) ; 
-        } else if (initialTimeOffset < 0) {
-            initialTimeOffset = 0;
-        }
+        initialTimeOffsetMinutes = (settings.workDuration * 60 - timeLeft) / 60; 
+        // Ensure offset isn't greater than work duration or negative
+        initialTimeOffsetMinutes = Math.max(0, Math.min(initialTimeOffsetMinutes, settings.workDuration - (1/60)));
+    } else if (activeTaskId === task.id && currentMode === 'work' && !isRunning && timeLeft < settings.workDuration * 60) {
+        // If paused in the middle of a work session for this task
+        initialTimeOffsetMinutes = (settings.workDuration * 60 - timeLeft) / 60;
+        initialTimeOffsetMinutes = Math.max(0, Math.min(initialTimeOffsetMinutes, settings.workDuration - (1/60)));
     }
 
 
     for (let i = 0; i < cyclesNeeded; i++) {
         if (i === 0) { 
-            totalMinutesRequired += Math.max(0, settings.workDuration - initialTimeOffset);
+            totalMinutesRequired += Math.max(0, settings.workDuration - initialTimeOffsetMinutes);
         } else {
             totalMinutesRequired += settings.workDuration;
         }
 
+        // Add break time only if it's not the last work cycle needed for this task
         if (i < cyclesNeeded - 1) { 
-            currentPomodoroCycleCount++;
-            if (currentPomodoroCycleCount >= settings.cyclesBeforeLongBreak) {
-                totalMinutesRequired += settings.longBreakDuration; currentPomodoroCycleCount = 0;
+            // Simulate cycle count for breaks accurately, considering existing cycleCount
+            const effectiveCycleForBreak = (cycleCount + i) % settings.cyclesBeforeLongBreak;
+            if (effectiveCycleForBreak === settings.cyclesBeforeLongBreak -1 ) { //This work session leads to a long break
+                 totalMinutesRequired += settings.longBreakDuration;
             } else {
-                totalMinutesRequired += settings.shortBreakDuration;
+                 totalMinutesRequired += settings.shortBreakDuration;
             }
         }
     }
@@ -963,21 +1026,53 @@ const TimerBlock: React.FC<TimerBlockProps> = ({ setIsPageInFocusMode }) => {
         onClose={() => setShowSettingsModal(false)}
         currentSettings={settings}
         onSaveSettings={(newSettings) => {
-          const oldSettings = {...settings}; 
+          const oldSettings = settings; 
           setSettings(newSettings); 
+
+          if (!isRunning) {
+            let newRelevantDuration = timeLeft; 
+            let durationChangedForCurrentMode = false;
+
+            if (currentMode === 'work' && oldSettings.workDuration !== newSettings.workDuration) {
+              newRelevantDuration = newSettings.workDuration * 60;
+              durationChangedForCurrentMode = true;
+            } else if (currentMode === 'short_break' && oldSettings.shortBreakDuration !== newSettings.shortBreakDuration) {
+              newRelevantDuration = newSettings.shortBreakDuration * 60;
+              durationChangedForCurrentMode = true;
+            } else if (currentMode === 'long_break' && oldSettings.longBreakDuration !== newSettings.longBreakDuration) {
+              newRelevantDuration = newSettings.longBreakDuration * 60;
+              durationChangedForCurrentMode = true;
+            }
+
+            if (durationChangedForCurrentMode) {
+              setTimeLeft(newRelevantDuration);
+            }
+          }
 
           if (backgroundMusicAudioRef.current) {
             if (oldSettings.includeMusic && !newSettings.includeMusic && !backgroundMusicAudioRef.current.paused) {
               backgroundMusicAudioRef.current.pause();
             }
-            if (newSettings.includeMusic && oldSettings.currentMusicTrackIndex !== newSettings.currentMusicTrackIndex) {
+            
+            if (newSettings.includeMusic && backgroundMusicAudioRef.current && 
+                (oldSettings.currentMusicTrackIndex !== newSettings.currentMusicTrackIndex || !backgroundMusicAudioRef.current.src)) {
                 const track = BACKGROUND_MUSIC_TRACKS[newSettings.currentMusicTrackIndex];
                 if (track) {
-                    backgroundMusicAudioRef.current.src = new URL(track.src, window.location.origin).href;
-                    if (isRunning && currentMode === 'work' && initialUserInteractionRef.current) { // Only play if user interacted
-                        backgroundMusicAudioRef.current.play().catch(e => console.error("Error playing new track:", e));
+                    const newSrc = new URL(track.src, window.location.origin).href;
+                    if (backgroundMusicAudioRef.current.src !== newSrc) {
+                        backgroundMusicAudioRef.current.src = newSrc;
+                        backgroundMusicAudioRef.current.load();
                     }
+                    // Play will be handled by handleStart or useEffect based on isRunning state
                 }
+            }
+          }
+          // Ensure notification sound source is updated if changed in settings
+          if (notificationSoundAudioRef.current && oldSettings.selectedNotificationSound !== newSettings.selectedNotificationSound) {
+            const soundUrl = new URL(newSettings.selectedNotificationSound, window.location.origin).href;
+            if (notificationSoundAudioRef.current.src !== soundUrl) {
+                notificationSoundAudioRef.current.src = soundUrl;
+                notificationSoundAudioRef.current.load();
             }
           }
         }}
